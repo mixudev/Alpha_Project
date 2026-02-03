@@ -43,19 +43,29 @@ local function require_module(path)
     local module
     
     if isRemote then
-        -- Remote: Load from GitHub (use game:HttpGet when available)
-        local url = baseUrl .. "/" .. path .. ".lua"
-        local success, content = pcall(function()
-            -- prefer game:HttpGet for compatibility in many executors
-            if type(game.HttpGet) == "function" then
-                return game:HttpGet(url)
-            else
-                return HttpService:GetAsync(url)
-            end
-        end)
+        -- Remote: try multiple extensions (.lua, .luau)
+        local triedUrls = {}
+        local content = nil
+        local success = false
+        for _, ext in ipairs({".lua", ".luau"}) do
+            local url = baseUrl .. "/" .. path .. ext
+            table.insert(triedUrls, url)
 
-        -- fallback: try ghproxy if direct fetch failed
-        if not success or not content or #tostring(content) < 5 then
+            local ok, res = pcall(function()
+                if type(game.HttpGet) == "function" then
+                    return game:HttpGet(url)
+                else
+                    return HttpService:GetAsync(url)
+                end
+            end)
+
+            if ok and res and #tostring(res) > 5 then
+                success = true
+                content = res
+                break
+            end
+
+            -- try proxy for this url
             local proxyUrl = "https://ghproxy.com/" .. url
             local ok2, res2 = pcall(function()
                 if type(game.HttpGet) == "function" then
@@ -64,14 +74,18 @@ local function require_module(path)
                     return HttpService:GetAsync(proxyUrl)
                 end
             end)
+
             if ok2 and res2 and #tostring(res2) > 5 then
                 success = true
                 content = res2
-            else
-                warn("❌ Failed to load from GitHub (both direct and proxy):", url)
-                warn("   Error:", content)
-                return nil
+                break
             end
+        end
+
+        if not success then
+            warn("❌ Failed to load from GitHub (tried):")
+            for _, u in ipairs(triedUrls) do warn("   ", u) end
+            return nil
         end
 
         -- Strip UTF-8 BOM if present
