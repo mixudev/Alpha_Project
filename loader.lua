@@ -43,18 +43,42 @@ local function require_module(path)
     local module
     
     if isRemote then
-        -- Remote: Load from GitHub
+        -- Remote: Load from GitHub (use game:HttpGet when available)
         local url = baseUrl .. "/" .. path .. ".lua"
         local success, content = pcall(function()
-            return HttpService:GetAsync(url)
+            -- prefer game:HttpGet for compatibility in many executors
+            if type(game.HttpGet) == "function" then
+                return game:HttpGet(url)
+            else
+                return HttpService:GetAsync(url)
+            end
         end)
-        
-        if not success then
-            warn("❌ Failed to load from GitHub:", url)
-            warn("   Error:", content)
-            return nil
+
+        -- fallback: try ghproxy if direct fetch failed
+        if not success or not content or #tostring(content) < 5 then
+            local proxyUrl = "https://ghproxy.com/" .. url
+            local ok2, res2 = pcall(function()
+                if type(game.HttpGet) == "function" then
+                    return game:HttpGet(proxyUrl)
+                else
+                    return HttpService:GetAsync(proxyUrl)
+                end
+            end)
+            if ok2 and res2 and #tostring(res2) > 5 then
+                success = true
+                content = res2
+            else
+                warn("❌ Failed to load from GitHub (both direct and proxy):", url)
+                warn("   Error:", content)
+                return nil
+            end
         end
-        
+
+        -- Strip UTF-8 BOM if present
+        if type(content) == "string" and content:sub(1,3) == "\239\187\191" then
+            content = content:sub(4)
+        end
+
         -- Execute the code
         local fn, err = loadstring(content, path)
         if not fn then
@@ -62,8 +86,14 @@ local function require_module(path)
             warn("   Error:", err)
             return nil
         end
-        
-        module = fn()
+
+        local okExec, resultExec = pcall(fn)
+        if not okExec then
+            warn("❌ Module execution error:", path)
+            warn("   Error:", resultExec)
+            return nil
+        end
+        module = resultExec
     else
         -- Local: Load from script parent
         local moduleName = path:gsub("/", ".")
