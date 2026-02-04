@@ -5,7 +5,7 @@ Menu utilitas untuk Roblox (Local / Executor). Ringan dan terintegrasi dalam sat
 ## Fitur
 
 - **Players** — Daftar pemain, Info, POV, Teleport. Koneksi di atas dengan border hijau.
-- **Settings** — Infinity Jump, Fly, No Clip, ESP, Infinity Zoom, Tracking Friends, Volume Map, Anti-AFK.
+- **Settings** — Infinity Jump, Fly, No Clip, ESP, Infinity Zoom, ESP Koneksi, Notifikasi, Volume Map, Anti-AFK.
 - **Drone** — Freecam smooth, Speed, ON/OFF.
 - **Info** — Pembuat GUI (Lazuardi Mandegar), detail server (Place ID, Job ID, pemain, dll).
 

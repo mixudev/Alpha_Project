@@ -1,7 +1,7 @@
 --[[
-    Alpha Project - Tracking Friends
-    Scanner UI: lingkaran + avatar koneksi + garis arah. Hanya teman di map.
-    Tetap scan sampai ketemu (jauh pun tetap tampil di tepi layar).
+    Alpha Project - ESP Koneksi
+    Sama seperti ESP tapi hanya menampilkan koneksi (teman) kita.
+    Realtime scan sampai kedetect, ringan (throttle update).
 ]]
 
 local Alpha = rawget(_G, "Alpha")
@@ -11,23 +11,17 @@ local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or re
 
 local TrackingFriendsFeature = {}
 
-local screenGui = nil
-local indicators = {}
-local updateConn = nil
+local espGuis = {}
+local espLabels = {}
+local espCharConns = {}
 local playerAddedConn = nil
 local playerRemovingConn = nil
-local UPDATE_INTERVAL = 0.12
-local lastUpdate = 0
+local scanConn = nil
+local SCAN_INTERVAL = 0.2
+local lastScan = 0
 
-local CIRCLE_SIZE = 38
-local LINE_THICKNESS = 2
-local MARGIN = 50
-local ORIGIN_OFFSET = 52
-local COLOR_LINE = Color3.fromRGB(0, 160, 145)
-local COLOR_RING = Color3.fromRGB(0, 140, 125)
-
--- Icon dari folder (GitHub raw). Di Roblox strict mungkin tidak load; fallback pakai bentuk.
-local SCANNER_ICON_URL = "https://raw.githubusercontent.com/mixudev/Alpha_Project/main/icon/favicon.png"
+local COLOR_KONEKSI = Color3.fromRGB(0, 220, 200)
+local COLOR_STROKE = Color3.fromRGB(0, 80, 90)
 
 local function get_friends_in_game()
     local list = {}
@@ -40,129 +34,86 @@ local function get_friends_in_game()
     return list
 end
 
-local function origin_point(viewSize)
-    return Vector2.new(viewSize.X - ORIGIN_OFFSET, viewSize.Y - ORIGIN_OFFSET)
+local function create_esp_for_friend(p)
+    if not p or not p.Character then return end
+    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if espGuis[p] then
+        pcall(function() espGuis[p]:Destroy() end)
+        espGuis[p] = nil
+        espLabels[p] = nil
+    end
+
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "AlphaESP_Koneksi_" .. tostring(p.UserId)
+    gui.Adornee = hrp
+    gui.AlwaysOnTop = true
+    gui.Size = UDim2.new(0, 160, 0, 40)
+    gui.StudsOffset = Vector3.new(0, 2.5, 0)
+    gui.MaxDistance = 10000
+    gui.Parent = Services.CoreGui
+
+    local nameText = p.DisplayName or p.Name
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Parent = gui
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.Oswald
+    label.TextSize = 18
+    label.Text = "◆ " .. nameText .. " ◆"
+    label.TextColor3 = COLOR_KONEKSI
+    label.TextStrokeColor3 = COLOR_STROKE
+    label.TextStrokeTransparency = 0.2
+    label.TextXAlignment = Enum.TextXAlignment.Center
+    label.TextYAlignment = Enum.TextYAlignment.Center
+
+    espGuis[p] = gui
+    espLabels[p] = label
 end
 
-local function clamp_to_screen(v2, viewSize, origin)
-    local ox, oy = origin.X, origin.Y
-    local x, y = v2.X, v2.Y
-    local dx, dy = x - ox, y - oy
-    if dx == 0 and dy == 0 then return Vector2.new(ox, oy) end
-    local maxLen = math.min(viewSize.X, viewSize.Y) - MARGIN
-    local len = math.sqrt(dx * dx + dy * dy)
-    if len <= maxLen then return Vector2.new(x, y) end
-    local scale = maxLen / len
-    return Vector2.new(ox + dx * scale, oy + dy * scale)
-end
-
-local function create_indicator_for_friend(p, parent)
-    if indicators[p] then return indicators[p] end
-
-    local container = Instance.new("Frame")
-    container.Name = "Track_" .. p.UserId
-    container.Parent = parent
-    container.Size = UDim2.new(0, CIRCLE_SIZE + 20, 0, CIRCLE_SIZE + 20)
-    container.Position = UDim2.new(0, 0, 0, 0)
-    container.AnchorPoint = Vector2.new(0.5, 0.5)
-    container.BackgroundTransparency = 1
-
-    local line = Instance.new("Frame")
-    line.Name = "Line"
-    line.Parent = container
-    line.BackgroundColor3 = COLOR_LINE
-    line.BorderSizePixel = 0
-    line.AnchorPoint = Vector2.new(0, 0.5)
-    line.Position = UDim2.new(0, 0, 0, 0)
-    line.Size = UDim2.new(0, 0, 0, LINE_THICKNESS)
-    line.Rotation = 0
-
-    local circle = Instance.new("Frame")
-    circle.Name = "Circle"
-    circle.Parent = container
-    circle.Size = UDim2.new(0, CIRCLE_SIZE, 0, CIRCLE_SIZE)
-    circle.Position = UDim2.new(0.5, -CIRCLE_SIZE/2, 0.5, -CIRCLE_SIZE/2)
-    circle.BackgroundColor3 = Color3.fromRGB(25, 35, 33)
-    circle.BorderSizePixel = 0
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = circle
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = COLOR_RING
-    stroke.Thickness = 2
-    stroke.Parent = circle
-
-    local avatar = Instance.new("ImageLabel")
-    avatar.Name = "Avatar"
-    avatar.Parent = circle
-    avatar.Size = UDim2.new(1, -6, 1, -6)
-    avatar.Position = UDim2.new(0, 3, 0, 3)
-    avatar.BackgroundTransparency = 1
-    avatar.BorderSizePixel = 0
-    avatar.Image = HttpUtil.get_headshot_url(p.UserId, 96)
-    avatar.ScaleType = Enum.ScaleType.Crop
-
-    local avCorner = Instance.new("UICorner")
-    avCorner.CornerRadius = UDim.new(1, 0)
-    avCorner.Parent = avatar
-
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Name = "Name"
-    nameLabel.Parent = container
-    nameLabel.Size = UDim2.new(1, 8, 0, 14)
-    nameLabel.Position = UDim2.new(0.5, 0, 0.5, CIRCLE_SIZE/2 + 2)
-    nameLabel.AnchorPoint = Vector2.new(0.5, 0)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.Gotham
-    nameLabel.Text = p.DisplayName or p.Name
-    nameLabel.TextColor3 = Color3.fromRGB(200, 240, 230)
-    nameLabel.TextSize = 10
-    nameLabel.TextStrokeTransparency = 0.6
-
-    indicators[p] = { container = container, line = line, circle = circle }
-    return indicators[p]
-end
-
-local function remove_indicator(p)
-    if indicators[p] then
-        pcall(function() indicators[p].container:Destroy() end)
-        indicators[p] = nil
+local function remove_esp_for_friend(p)
+    if espGuis[p] then
+        pcall(function() espGuis[p]:Destroy() end)
+        espGuis[p] = nil
+        espLabels[p] = nil
     end
 end
 
-local function update_indicators()
-    if not screenGui or not screenGui.Parent or not Settings.features.trackingFriendsEnabled then return end
-    local cam = Services.Camera
-    if not cam then return end
-    local viewSize = cam.ViewportSize
-    local origin = origin_point(viewSize)
-    local myChar = Services.LocalPlayer and Services.LocalPlayer.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myHrp then return end
+local function setup_char_conn(p)
+    if espCharConns[p] then
+        espCharConns[p]:Disconnect()
+        espCharConns[p] = nil
+    end
+    espCharConns[p] = p.CharacterAdded:Connect(function()
+        task.wait(0.1)
+        if Settings.features.trackingFriendsEnabled and Settings.friendIds and Settings.friendIds[p.UserId] then
+            create_esp_for_friend(p)
+        end
+    end)
+end
 
+local function scan_and_update()
+    if not Settings.features.trackingFriendsEnabled then return end
+    local t = tick()
+    if t - lastScan < SCAN_INTERVAL then return end
+    lastScan = t
     local friends = get_friends_in_game()
     local seen = {}
     for _, p in ipairs(friends) do
         seen[p] = true
-        local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        local pos2d = cam:WorldToViewportPoint(hrp and hrp.Position or myHrp.Position)
-        local clamped = clamp_to_screen(Vector2.new(pos2d.X, pos2d.Y), viewSize, origin)
-        local ind = create_indicator_for_friend(p, screenGui)
-        ind.container.Position = UDim2.new(0, clamped.X, 0, clamped.Y)
-
-        local dx = clamped.X - origin.X
-        local dy = clamped.Y - origin.Y
-        local len = math.sqrt(dx * dx + dy * dy)
-        local angle = math.deg(math.atan2(-dy, dx)) - 90
-        ind.line.Position = UDim2.new(0, origin.X - clamped.X, 0, origin.Y - clamped.Y)
-        ind.line.Size = UDim2.new(0, math.max(0, len - CIRCLE_SIZE/2), 0, LINE_THICKNESS)
-        ind.line.Rotation = angle
+        if p.Character then
+            create_esp_for_friend(p)
+        end
+        setup_char_conn(p)
     end
-    for p, _ in pairs(indicators) do
+    for p, _ in pairs(espGuis) do
         if not seen[p] then
-            remove_indicator(p)
+            remove_esp_for_friend(p)
+            if espCharConns[p] then
+                espCharConns[p]:Disconnect()
+                espCharConns[p] = nil
+            end
         end
     end
 end
@@ -181,96 +132,41 @@ local function ensure_friends_loaded(callback)
     end)
 end
 
-local function enable_tracking()
+local function enable()
     Settings.features.trackingFriendsEnabled = true
     ensure_friends_loaded(function()
         if not Settings.features.trackingFriendsEnabled then return end
-        if screenGui then pcall(function() screenGui:Destroy() end) end
-        screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "AlphaTrackingFriends"
-        screenGui.ResetOnSpawn = false
-        screenGui.IgnoreGuiInset = true
-        screenGui.DisplayOrder = 5
-        screenGui.Parent = Services.CoreGui
-
-        local centerRing = Instance.new("Frame")
-        centerRing.Name = "ScannerCenter"
-        centerRing.Parent = screenGui
-        centerRing.AnchorPoint = Vector2.new(0.5, 0.5)
-        centerRing.Size = UDim2.new(0, 36, 0, 36)
-        centerRing.Position = UDim2.new(1, -ORIGIN_OFFSET, 1, -ORIGIN_OFFSET)
-        centerRing.BackgroundColor3 = Color3.fromRGB(22, 38, 36)
-        centerRing.BorderSizePixel = 0
-        local centerCorner = Instance.new("UICorner")
-        centerCorner.CornerRadius = UDim.new(1, 0)
-        centerCorner.Parent = centerRing
-        local centerStroke = Instance.new("UIStroke")
-        centerStroke.Color = COLOR_RING
-        centerStroke.Thickness = 2
-        centerStroke.Parent = centerRing
-        local centerIcon = Instance.new("ImageLabel")
-        centerIcon.Name = "Icon"
-        centerIcon.Parent = centerRing
-        centerIcon.Size = UDim2.new(1, -8, 1, -8)
-        centerIcon.Position = UDim2.new(0, 4, 0, 4)
-        centerIcon.BackgroundTransparency = 1
-        centerIcon.Image = SCANNER_ICON_URL
-        centerIcon.ScaleType = Enum.ScaleType.Fit
-        local centerFallback = Instance.new("TextLabel")
-        centerFallback.Name = "Fallback"
-        centerFallback.Parent = centerRing
-        centerFallback.Size = UDim2.new(1, 0, 1, 0)
-        centerFallback.BackgroundTransparency = 1
-        centerFallback.Text = "◎"
-        centerFallback.TextColor3 = COLOR_RING
-        centerFallback.TextSize = 22
-        centerFallback.Font = Enum.Font.GothamBold
-        centerFallback.ZIndex = 0
-        centerIcon.ZIndex = 1
-        pcall(function()
-            game:GetService("ContentProvider"):PreloadAsync({ centerIcon })
-        end)
-
-        lastUpdate = 0
-        updateConn = Services.RunService.Heartbeat:Connect(function()
-            local t = tick()
-            if t - lastUpdate >= UPDATE_INTERVAL then
-                lastUpdate = t
-                update_indicators()
-            end
-        end)
+        lastScan = 0
+        scanConn = Services.RunService.Heartbeat:Connect(scan_and_update)
         playerAddedConn = Services.Players.PlayerAdded:Connect(function()
             if Settings.features.trackingFriendsEnabled then
                 ensure_friends_loaded(function() end)
             end
         end)
         playerRemovingConn = Services.Players.PlayerRemoving:Connect(function(p)
-            remove_indicator(p)
+            remove_esp_for_friend(p)
+            if espCharConns[p] then
+                espCharConns[p]:Disconnect()
+                espCharConns[p] = nil
+            end
         end)
-        update_indicators()
+        scan_and_update()
     end)
 end
 
-local function disable_tracking()
+local function disable()
     Settings.features.trackingFriendsEnabled = false
-    if updateConn then updateConn:Disconnect() updateConn = nil end
+    if scanConn then scanConn:Disconnect() scanConn = nil end
     if playerAddedConn then playerAddedConn:Disconnect() playerAddedConn = nil end
     if playerRemovingConn then playerRemovingConn:Disconnect() playerRemovingConn = nil end
-    for p, _ in pairs(indicators) do
-        remove_indicator(p)
-    end
-    if screenGui then
-        pcall(function() screenGui:Destroy() end)
-        screenGui = nil
+    for p, _ in pairs(espGuis) do
+        remove_esp_for_friend(p)
+        if espCharConns[p] then espCharConns[p]:Disconnect() espCharConns[p] = nil end
     end
 end
 
 function TrackingFriendsFeature.toggle(enabled)
-    if enabled then
-        enable_tracking()
-    else
-        disable_tracking()
-    end
+    if enabled then enable() else disable() end
 end
 
 return TrackingFriendsFeature
