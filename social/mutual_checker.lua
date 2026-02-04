@@ -4,9 +4,10 @@
     Cek apakah player lain ada di dalam daftar friends lokal
 ]]
 
-local Services = require(script.Parent.Parent:FindFirstChild("core/services"))
-local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
-local Friends = require(script.Parent:FindFirstChild("friends"))
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
+local Friends = (Alpha and Alpha.require) and Alpha.require("social/friends") or require(script.Parent:FindFirstChild("friends"))
 
 local MutualChecker = {}
 

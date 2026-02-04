@@ -3,7 +3,8 @@
     Helper untuk Roblox API calls (friends, games, etc)
 ]]
 
-local Services = require(script.Parent.Parent:FindFirstChild("core/services"))
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
 
 local HttpUtil = {}
 

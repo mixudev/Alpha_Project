@@ -7,6 +7,14 @@ local Services = require(script.Parent.Parent:FindFirstChild("core/services"))
 local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
 local HttpUtil = require(script.Parent.Parent:FindFirstChild("utils/http"))
 
+-- loadstring-safe requires
+local Alpha = rawget(_G, "Alpha")
+if Alpha and Alpha.require then
+    Services = Alpha.require("core/services")
+    Settings = Alpha.require("config/settings")
+    HttpUtil = Alpha.require("utils/http")
+end
+
 local Friends = {}
 
 -- ============================================

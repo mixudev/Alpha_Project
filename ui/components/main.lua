@@ -6,12 +6,14 @@
 local Components = {}
 
 -- ============================================
--- REQUIRE COMPONENTS
+-- REQUIRE COMPONENTS (loadstring-safe)
 -- ============================================
 
-local Toggle = require(script.Parent:FindFirstChild("toggle"))
-local Button = require(script.Parent:FindFirstChild("button"))
-local Section = require(script.Parent:FindFirstChild("section"))
+local Alpha = rawget(_G, "Alpha")
+
+local Toggle = (Alpha and Alpha.require) and Alpha.require("ui/components/toggle") or require(script.Parent:FindFirstChild("toggle"))
+local Button = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent:FindFirstChild("button"))
+local Section = (Alpha and Alpha.require) and Alpha.require("ui/components/section") or require(script.Parent:FindFirstChild("section"))
 
 -- ============================================
 -- EXPORT ALL COMPONENTS

@@ -3,7 +3,8 @@
     Creates scrollable pages untuk setiap content area
 ]]
 
-local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
+local Alpha = rawget(_G, "Alpha")
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
 
 local UIPages = {}
 

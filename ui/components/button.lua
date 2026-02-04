@@ -3,8 +3,9 @@
     Reusable button with hover effects
 ]]
 
-local Settings = require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
-local TweenUtil = require(script.Parent.Parent.Parent:FindFirstChild("utils/tween"))
+local Alpha = rawget(_G, "Alpha")
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
+local TweenUtil = (Alpha and Alpha.require) and Alpha.require("utils/tween") or require(script.Parent.Parent.Parent:FindFirstChild("utils/tween"))
 
 local ButtonComponent = {}
 

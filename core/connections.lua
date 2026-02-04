@@ -3,8 +3,9 @@
     Handle semua event connections dan cleanup
 ]]
 
-local Services = require(script.Parent:FindFirstChild("services"))
-local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent:FindFirstChild("services"))
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
 
 local Connections = {}
 
@@ -38,8 +39,8 @@ function Connections.setup_player_events()
         -- Check mutual friends when player joins
         if Settings.friends.friendDataLoaded then
             task.delay(0.5, function()
-                local MutualChecker = require(script.Parent.Parent:FindFirstChild("social/mutual_checker"))
-                local Notification = require(script.Parent.Parent:FindFirstChild("social/notification"))
+                local MutualChecker = (Alpha and Alpha.require) and Alpha.require("social/mutual_checker") or require(script.Parent.Parent:FindFirstChild("social/mutual_checker"))
+                local Notification = (Alpha and Alpha.require) and Alpha.require("social/notification") or require(script.Parent.Parent:FindFirstChild("social/notification"))
                 
                 if MutualChecker and Notification then
                     MutualChecker.check(p)

@@ -3,7 +3,8 @@
     Category header untuk UI sections
 ]]
 
-local Settings = require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
+local Alpha = rawget(_G, "Alpha")
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
 
 local SectionComponent = {}
 

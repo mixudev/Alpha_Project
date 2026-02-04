@@ -129,6 +129,20 @@ local function require_module(path)
 end
 
 -- ============================================
+-- GLOBAL MODULE ACCESS (for loadstring modules)
+-- ============================================
+-- Many modules can't rely on `script.Parent` when executed via loadstring.
+-- Expose a stable global API so modules can do: Alpha.require("core/services")
+
+do
+    local g = _G or getfenv and getfenv(0) or {}
+    g.Alpha = g.Alpha or {}
+    g.Alpha.require = require_module
+    g.Alpha.isRemote = isRemote
+    g.Alpha.baseUrl = baseUrl
+end
+
+-- ============================================
 -- LOAD MODULES (Sequential)
 -- ============================================
 

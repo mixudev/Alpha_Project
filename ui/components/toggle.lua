@@ -3,9 +3,10 @@
     Reusable toggle button with ON/OFF state
 ]]
 
-local Services = require(script.Parent.Parent.Parent:FindFirstChild("core/services"))
-local Settings = require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
-local TweenUtil = require(script.Parent.Parent.Parent:FindFirstChild("utils/tween"))
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent.Parent:FindFirstChild("core/services"))
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent.Parent:FindFirstChild("config/settings"))
+local TweenUtil = (Alpha and Alpha.require) and Alpha.require("utils/tween") or require(script.Parent.Parent.Parent:FindFirstChild("utils/tween"))
 
 local ToggleComponent = {}
 

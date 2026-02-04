@@ -3,11 +3,12 @@
     Display all players dengan buttons (POV, Info, TP)
 ]]
 
-local Services = require(script.Parent.Parent:FindFirstChild("core/services"))
-local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
-local Spectate = require(script.Parent:FindFirstChild("spectate"))
-local ButtonComponent = require(script.Parent.Parent:FindFirstChild("ui/components/button"))
-local TimeUtil = require(script.Parent.Parent:FindFirstChild("utils/time"))
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
+local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") or require(script.Parent:FindFirstChild("spectate"))
+local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent.Parent:FindFirstChild("ui/components/button"))
+local TimeUtil = (Alpha and Alpha.require) and Alpha.require("utils/time") or require(script.Parent.Parent:FindFirstChild("utils/time"))
 
 local PlayerList = {}
 
