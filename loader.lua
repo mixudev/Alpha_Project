@@ -226,6 +226,8 @@ local function load_all()
     local AntiAfkFeature = require_module("features/anti_afk")
     local TrackingFriendsFeature = require_module("features/tracking_friends")
     local NotifikasiFeature = require_module("features/notifikasi")
+    local NightVisionFeature = require_module("features/night_vision")
+    local ChamsFeature = require_module("features/chams")
     
     print("✅ Features loaded")
 
@@ -261,6 +263,7 @@ local function load_all()
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
     local trackerPage = UIPages.create("Tracker", UIStructure.content)
+    local utilityPage = UIPages.create("Utility", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
     local function render_players()
@@ -281,6 +284,10 @@ local function load_all()
         pcall(function() Tracker.create(trackerPage) end)
     end
 
+    local function render_utility()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, utilityPage)
+    end
+
     local function render_info()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, infoPage)
     end
@@ -289,7 +296,8 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
     UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 5, render_info)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 5, render_utility)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 6, render_info)
 
     -- Default
     render_players()
@@ -399,6 +407,19 @@ local function load_all()
             end)
             apply_volume(volLevels[volIndex])
         end
+    end
+
+    -- Utility page: Night Vision + Chams
+    do
+        local Section = UIComponents.Section
+        local Toggle = UIComponents.Toggle
+        Section.new(utilityPage, "🔧 Visual Utility", 1)
+        Toggle.new(utilityPage, "Night Vision", 2, function(enabled)
+            pcall(function() NightVisionFeature.toggle(enabled) end)
+        end)
+        Toggle.new(utilityPage, "Chams", 3, function(enabled)
+            pcall(function() ChamsFeature.toggle(enabled) end)
+        end)
     end
 
     -- Drone page: keterangan + toggle + speed
@@ -586,6 +607,58 @@ local function load_all()
         if Lighting then
             add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 10)
         end
+        -- Tombol Copy (Place ID, Job ID)
+        local function copy_to_clipboard(text)
+            local s = tostring(text)
+            local ok = pcall(function()
+                if setclipboard then setclipboard(s) return true end
+            end)
+            if not ok then
+                pcall(function()
+                    local uis = game:GetService("UserInputService")
+                    if uis and uis.SetClipboard then uis:SetClipboard(s) end
+                end)
+            end
+        end
+        local copyRow = Instance.new("Frame")
+        copyRow.Parent = infoPage
+        copyRow.BackgroundTransparency = 1
+        copyRow.Size = UDim2.new(1, -20, 0, 40)
+        copyRow.LayoutOrder = 11
+        local copyPlaceBtn = Instance.new("TextButton")
+        copyPlaceBtn.Parent = copyRow
+        copyPlaceBtn.Size = UDim2.new(0.48, 0, 0, 36)
+        copyPlaceBtn.Position = UDim2.new(0, 0, 0, 0)
+        copyPlaceBtn.BackgroundColor3 = Settings.colors.bg_light
+        copyPlaceBtn.BorderSizePixel = 0
+        copyPlaceBtn.Font = Enum.Font.GothamBold
+        copyPlaceBtn.Text = "📋 Copy Place ID"
+        copyPlaceBtn.TextColor3 = Settings.colors.text_primary
+        copyPlaceBtn.TextSize = 12
+        copyPlaceBtn.AutoButtonColor = false
+        local c1 = Instance.new("UICorner")
+        c1.CornerRadius = UDim.new(0, 6)
+        c1.Parent = copyPlaceBtn
+        copyPlaceBtn.MouseButton1Click:Connect(function()
+            copy_to_clipboard(placeId)
+        end)
+        local copyJobBtn = Instance.new("TextButton")
+        copyJobBtn.Parent = copyRow
+        copyJobBtn.Size = UDim2.new(0.48, 0, 0, 36)
+        copyJobBtn.Position = UDim2.new(0.52, 0, 0, 0)
+        copyJobBtn.BackgroundColor3 = Settings.colors.bg_light
+        copyJobBtn.BorderSizePixel = 0
+        copyJobBtn.Font = Enum.Font.GothamBold
+        copyJobBtn.Text = "📋 Copy Job ID"
+        copyJobBtn.TextColor3 = Settings.colors.text_primary
+        copyJobBtn.TextSize = 12
+        copyJobBtn.AutoButtonColor = false
+        local c2 = Instance.new("UICorner")
+        c2.CornerRadius = UDim.new(0, 6)
+        c2.Parent = copyJobBtn
+        copyJobBtn.MouseButton1Click:Connect(function()
+            copy_to_clipboard(jobId)
+        end)
     end
 
     -- Auto refresh player list (when Players page visible)

@@ -19,6 +19,8 @@ Settings.features = {
     notifikasiEnabled = false,
     droneEnabled = false,
     antiAfkEnabled = false,
+    nightVisionEnabled = false,
+    chamsEnabled = false,
 }
 
 -- ============================================
