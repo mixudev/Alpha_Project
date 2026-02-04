@@ -6,10 +6,24 @@
 local Alpha = rawget(_G, "Alpha")
 local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
 local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
-local TweenUtil = (Alpha and Alpha.require) and Alpha.require("utils/tween") or require(script.Parent.Parent:FindFirstChild("utils/tween"))
 local TimeUtil = (Alpha and Alpha.require) and Alpha.require("utils/time") or require(script.Parent.Parent:FindFirstChild("utils/time"))
+local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or require(script.Parent.Parent:FindFirstChild("utils/http"))
 
 local InfoPopup = {}
+
+-- Format umur akun dalam hari, bulan, tahun (Indonesia)
+local function format_account_age_id(days)
+    if not days or days < 0 then return "N/A" end
+    local years = math.floor(days / 365)
+    local rem = days % 365
+    local months = math.floor(rem / 30)
+    local dayCount = rem % 30
+    local parts = {}
+    if years > 0 then table.insert(parts, years .. " tahun") end
+    if months > 0 then table.insert(parts, months .. " bulan") end
+    table.insert(parts, dayCount .. " hari")
+    return table.concat(parts, " ")
+end
 
 -- ============================================
 -- SHOW PLAYER INFO
@@ -180,7 +194,7 @@ function InfoPopup.show(player)
     end
     
     -- ============================================
-    -- POPULATE INFO
+    -- POPULATE INFO (basic + async API data)
     -- ============================================
     
     local order = 1
@@ -188,6 +202,119 @@ function InfoPopup.show(player)
     create_info_item("Display Name", player.DisplayName or "N/A", order) order = order + 1
     create_info_item("User ID", tostring(player.UserId), order) order = order + 1
     create_info_item("Status", "In Game", order) order = order + 1
+
+    -- Umur akun (hari, bulan, tahun) & tanggal daftar
+    pcall(function()
+        if player.AccountAge then
+            create_info_item("Umur Akun", format_account_age_id(player.AccountAge), order) order = order + 1
+            create_info_item("Tanggal Daftar", TimeUtil.get_first_join_date(player.AccountAge), order) order = order + 1
+        end
+    end)
+
+    -- Waktu di map (jika ada tracking)
+    if Settings.playerJoinTimes and Settings.playerJoinTimes[player] then
+        create_info_item("Waktu di Map", TimeUtil.get_time_on_map(Settings.playerJoinTimes[player]), order) order = order + 1
+    end
+
+    -- Team
+    pcall(function()
+        if player.Team and player.Team.Name then
+            create_info_item("Team", player.Team.Name, order) order = order + 1
+        end
+    end)
+
+    -- Koneksi (Friends count) - async
+    task.spawn(function()
+        local count = HttpUtil.get_friends_count(player.UserId)
+        if count ~= nil and popup.Parent then
+            create_info_item("Koneksi (Friends)", tostring(count) .. " teman", order) order = order + 1
+        end
+    end)
+
+    -- Map/Game yang dibuat - async
+    task.spawn(function()
+        local games = HttpUtil.get_user_created_games(player.UserId, 10)
+        if not popup.Parent then return end
+        if games and #games > 0 then
+            create_info_item("Game/Map Dibuat", tostring(#games) .. " game", order) order = order + 1
+            -- Section daftar game
+            local section = Instance.new("Frame")
+            section.Parent = content
+            section.BackgroundColor3 = Settings.colors.bg_light
+            section.BorderSizePixel = 0
+            section.Size = UDim2.new(1, 0, 0, 0)
+            section.LayoutOrder = order
+            order = order + 1
+            local secCorner = Instance.new("UICorner")
+            secCorner.CornerRadius = UDim.new(0, 6)
+            secCorner.Parent = section
+            local secTitle = Instance.new("TextLabel")
+            secTitle.Parent = section
+            secTitle.BackgroundTransparency = 1
+            secTitle.Position = UDim2.new(0, 12, 0, 8)
+            secTitle.Size = UDim2.new(1, -24, 0, 22)
+            secTitle.Font = Enum.Font.GothamBold
+            secTitle.Text = "🎮 Game/Map yang dibuat"
+            secTitle.TextColor3 = Settings.colors.text_secondary
+            secTitle.TextSize = 12
+            secTitle.TextXAlignment = Enum.TextXAlignment.Left
+            local list = Instance.new("Frame")
+            list.Parent = section
+            list.BackgroundTransparency = 1
+            list.Position = UDim2.new(0, 0, 0, 34)
+            list.Size = UDim2.new(1, 0, 0, 0)
+            local listLayout = Instance.new("UIListLayout")
+            listLayout.Parent = list
+            listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            listLayout.Padding = UDim.new(0, 4)
+            local listPad = Instance.new("UIPadding")
+            listPad.PaddingLeft = UDim.new(0, 12)
+            listPad.PaddingRight = UDim.new(0, 12)
+            listPad.PaddingBottom = UDim.new(0, 8)
+            listPad.Parent = list
+            for i, game in ipairs(games) do
+                if i > 5 then break end
+                local row = Instance.new("Frame")
+                row.Parent = list
+                row.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+                row.BorderSizePixel = 0
+                row.Size = UDim2.new(1, 0, 0, 26)
+                row.LayoutOrder = i
+                local rowCorner = Instance.new("UICorner")
+                rowCorner.CornerRadius = UDim.new(0, 4)
+                rowCorner.Parent = row
+                local nameLbl = Instance.new("TextLabel")
+                nameLbl.Parent = row
+                nameLbl.BackgroundTransparency = 1
+                nameLbl.Position = UDim2.new(0, 8, 0, 0)
+                nameLbl.Size = UDim2.new(0.7, 0, 1, 0)
+                nameLbl.Font = Enum.Font.Gotham
+                nameLbl.Text = game.name or "Unknown"
+                nameLbl.TextColor3 = Settings.colors.text_primary
+                nameLbl.TextSize = 11
+                nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+                local visits = game.placeVisits or 0
+                local visitsText = visits >= 1000000 and string.format("%.1fM", visits/1000000) or (visits >= 1000 and string.format("%.1fK", visits/1000) or tostring(visits))
+                local visLbl = Instance.new("TextLabel")
+                visLbl.Parent = row
+                visLbl.BackgroundTransparency = 1
+                visLbl.Position = UDim2.new(0.7, 0, 0, 0)
+                visLbl.Size = UDim2.new(0.3, -8, 1, 0)
+                visLbl.Font = Enum.Font.Gotham
+                visLbl.Text = "▶ " .. visitsText
+                visLbl.TextColor3 = Settings.colors.text_tertiary
+                visLbl.TextSize = 10
+                visLbl.TextXAlignment = Enum.TextXAlignment.Right
+            end
+            listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                list.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
+                section.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y + 42)
+            end)
+            list.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
+            section.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y + 42)
+        end
+    end)
 
     print("📋 Player info opened:", player.Name)
 end

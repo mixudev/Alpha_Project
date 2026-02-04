@@ -1,0 +1,135 @@
+--[[
+    Alpha Project - ESP Feature
+    Menampilkan nama player dari jarak jauh (Billboard name tags)
+]]
+
+local Alpha = rawget(_G, "Alpha")
+local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
+local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
+
+local EspFeature = {}
+
+local espGuis = {}
+local espCharConns = {}
+local espPlayerAddedConn = nil
+local espPlayerRemovingConn = nil
+
+-- ============================================
+-- CREATE BILLBOARD FOR ONE PLAYER
+-- ============================================
+
+local function create_esp_for_player(p)
+    if not p or not p.Character then return end
+    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if espGuis[p] then
+        pcall(function() espGuis[p]:Destroy() end)
+        espGuis[p] = nil
+    end
+
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "AlphaESP_" .. tostring(p.UserId)
+    gui.Adornee = hrp
+    gui.AlwaysOnTop = true
+    gui.Size = UDim2.new(0, 160, 0, 40)
+    gui.StudsOffset = Vector3.new(0, 2.5, 0)
+    gui.MaxDistance = 10000
+    gui.Parent = Services.CoreGui
+
+    local label = Instance.new("TextLabel")
+    label.Parent = gui
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 18
+    label.Text = p.DisplayName or p.Name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextStrokeTransparency = 0.5
+    label.TextXAlignment = Enum.TextXAlignment.Center
+    label.TextYAlignment = Enum.TextYAlignment.Center
+
+    espGuis[p] = gui
+end
+
+local function remove_esp_for_player(p)
+    if espGuis[p] then
+        pcall(function() espGuis[p]:Destroy() end)
+        espGuis[p] = nil
+    end
+end
+
+local function setup_char_conn(p)
+    if espCharConns[p] then
+        espCharConns[p]:Disconnect()
+        espCharConns[p] = nil
+    end
+    espCharConns[p] = p.CharacterAdded:Connect(function(char)
+        task.wait(0.1)
+        if Settings.features.espEnabled then
+            create_esp_for_player(p)
+        end
+    end)
+end
+
+-- ============================================
+-- ENABLE / DISABLE
+-- ============================================
+
+local function enable_esp()
+    Settings.features.espEnabled = true
+    for _, p in ipairs(Services.Players:GetPlayers()) do
+        if p ~= Services.LocalPlayer then
+            if p.Character then create_esp_for_player(p) end
+            setup_char_conn(p)
+        end
+    end
+    espPlayerAddedConn = Services.Players.PlayerAdded:Connect(function(p)
+        if p ~= Services.LocalPlayer then
+            setup_char_conn(p)
+            task.wait(0.1)
+            if Settings.features.espEnabled and p.Character then
+                create_esp_for_player(p)
+            end
+        end
+    end)
+    espPlayerRemovingConn = Services.Players.PlayerRemoving:Connect(function(p)
+        remove_esp_for_player(p)
+        if espCharConns[p] then
+            espCharConns[p]:Disconnect()
+            espCharConns[p] = nil
+        end
+    end)
+end
+
+local function disable_esp()
+    Settings.features.espEnabled = false
+    for p, _ in pairs(espGuis) do
+        remove_esp_for_player(p)
+    end
+    for p, conn in pairs(espCharConns) do
+        if conn then conn:Disconnect() end
+        espCharConns[p] = nil
+    end
+    if espPlayerAddedConn then
+        espPlayerAddedConn:Disconnect()
+        espPlayerAddedConn = nil
+    end
+    if espPlayerRemovingConn then
+        espPlayerRemovingConn:Disconnect()
+        espPlayerRemovingConn = nil
+    end
+end
+
+-- ============================================
+-- TOGGLE (Public API)
+-- ============================================
+
+function EspFeature.toggle(enabled)
+    if enabled then
+        enable_esp()
+    else
+        disable_esp()
+    end
+end
+
+return EspFeature

@@ -219,8 +219,24 @@ local function load_all()
     local FlyFeature = require_module("features/fly")
     local NoClipFeature = require_module("features/noclip")
     local InfinityJump = require_module("features/infinity_jump")
+    local EspFeature = require_module("features/esp")
+    local InfinityZoomFeature = require_module("features/infinity_zoom")
     
     print("✅ Features loaded")
+
+    -- Player join times (untuk info popup "Waktu di Map")
+    do
+        local Players = CoreServices.Players
+        for _, p in ipairs(Players:GetPlayers()) do
+            Config.playerJoinTimes[p] = tick()
+        end
+        Players.PlayerAdded:Connect(function(p)
+            Config.playerJoinTimes[p] = tick()
+        end)
+        Players.PlayerRemoving:Connect(function(p)
+            Config.playerJoinTimes[p] = nil
+        end)
+    end
     
     -- ============================================
     -- Initialize Main UI
@@ -272,6 +288,16 @@ local function load_all()
 
         Toggle.new(settingsPage, "No Clip", 4, function(enabled)
             pcall(function() NoClipFeature.toggle(enabled) end)
+        end)
+
+        Section.new(settingsPage, "🔍 ESP & Camera", 5)
+
+        Toggle.new(settingsPage, "ESP (lihat player dari jauh)", 6, function(enabled)
+            pcall(function() EspFeature.toggle(enabled) end)
+        end)
+
+        Toggle.new(settingsPage, "Infinity Zoom", 7, function(enabled)
+            pcall(function() InfinityZoomFeature.toggle(enabled) end)
         end)
     end
 

@@ -154,6 +154,42 @@ function HttpUtil.get_user_info(userId)
 end
 
 -- ============================================
+-- ROBLOX API: Get Friends Count
+-- ============================================
+
+function HttpUtil.get_friends_count(userId)
+    if not Services.can_http() then return nil end
+    local url = string.format("https://friends.roblox.com/v1/users/%d/friends/count", userId)
+    local success, response = pcall(function() return HttpUtil.get(url) end)
+    if not success or not response then return nil end
+    local okDecode, decoded = pcall(function() return HttpUtil.decode(response) end)
+    if okDecode and type(decoded) == "table" and decoded.count ~= nil then
+        return decoded.count
+    end
+    return nil
+end
+
+-- ============================================
+-- ROBLOX API: Get User Created Games (Maps)
+-- ============================================
+
+function HttpUtil.get_user_created_games(userId, limit)
+    limit = limit or 10
+    if not Services.can_http() then return nil end
+    local url = string.format(
+        "https://games.roblox.com/v2/users/%d/games?accessFilter=2&limit=%d&sortOrder=Asc",
+        userId, limit
+    )
+    local success, response = pcall(function() return HttpUtil.get(url) end)
+    if not success or not response then return nil end
+    local okDecode, decoded = pcall(function() return HttpUtil.decode(response) end)
+    if okDecode and type(decoded) == "table" and decoded.data then
+        return decoded.data
+    end
+    return nil
+end
+
+-- ============================================
 -- SAFE PCALL WRAPPER
 -- ============================================
 
