@@ -6,6 +6,7 @@
 local Services = require(script.Parent.Parent:FindFirstChild("core/services"))
 local Settings = require(script.Parent.Parent:FindFirstChild("config/settings"))
 local TweenUtil = require(script.Parent.Parent:FindFirstChild("utils/tween"))
+local HttpUtil = require(script.Parent.Parent:FindFirstChild("utils/http"))
 
 local Notification = {}
 

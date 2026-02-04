@@ -53,13 +53,43 @@ end
 -- HTTP CHECK
 -- ============================================
 
-function Services.is_http_enabled()
-    return Services.HttpService.HttpEnabled
+-- NOTE:
+-- In Roblox Studio, HttpEnabled must be true for HttpService:GetAsync().
+-- In many executors, `game:HttpGet()` (and/or exploit request functions) may work
+-- even when HttpEnabled is false. So we treat "HTTP available" as:
+-- - HttpService.HttpEnabled OR
+-- - game:HttpGet exists OR
+-- - syn.request / http_request / request exists
+
+local function has_executor_http()
+    if type(game) == "userdata" and type(game.HttpGet) == "function" then
+        return true
+    end
+    if type(syn) == "table" and type(syn.request) == "function" then
+        return true
+    end
+    if type(http_request) == "function" then
+        return true
+    end
+    if type(request) == "function" then
+        return true
+    end
+    return false
 end
 
-if not Services.is_http_enabled() then
-    warn("⚠️ HTTP Service is not enabled!")
-    warn("ℹ️ Enable it in Game Settings > Security > Allow HTTP Requests")
+-- Keep old name for compatibility with existing modules.
+function Services.is_http_enabled()
+    return Services.HttpService.HttpEnabled or has_executor_http()
+end
+
+-- More explicit helper.
+function Services.can_http()
+    return Services.is_http_enabled()
+end
+
+if not Services.can_http() then
+    warn("⚠️ HTTP is not available (HttpEnabled OFF and no executor HTTP)!")
+    warn("ℹ️ Studio: enable Game Settings > Security > Allow HTTP Requests")
 end
 
 return Services

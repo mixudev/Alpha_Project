@@ -135,10 +135,13 @@ end
 local function load_all()
     print("🚀 Loading Alpha Project...")
     
-    if not HttpService.HttpEnabled and isRemote then
-        warn("⚠️ HTTP Service is not enabled!")
-        warn("ℹ️ Enable it in Game Settings > Security > Allow HTTP Requests")
-        return false
+    -- IMPORTANT:
+    -- In executor mode, `HttpService.HttpEnabled` can be false while `game:HttpGet()`
+    -- still works. So don't hard-fail here; modules will use the shared HTTP utility
+    -- which tries executor-friendly methods first.
+    if isRemote and not HttpService.HttpEnabled then
+        warn("⚠️ HttpService.HttpEnabled = false (remote mode).")
+        warn("ℹ️ If you're in Studio, enable HTTP Requests; if you're in executor, this can be normal.")
     end
     
     -- 1. Core + Config
