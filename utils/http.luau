@@ -19,60 +19,35 @@ function HttpUtil.decode(json)
     return Services.HttpService:JSONDecode(json)
 end
 
--- ============================================
--- GET REQUEST
--- ============================================
 
-function HttpUtil.get(url)
-    if not Services.is_http_enabled() then
-        warn("❌ HTTP Service is not enabled")
-        return nil, "HTTP disabled"
-    end
-    
-    local success, response = pcall(function()
-        return Services.HttpService:GetAsync(url)
-    end)
-    
-    if success then
-        return response
-    else
-        warn("❌ HTTP GET failed:", response)
-        return nil, response
-    end
-end
-
--- ============================================
--- GET + DECODE JSON
--- ============================================
-
-function HttpUtil.get_json(url)
-    local response = HttpUtil.get(url)
-    if not response then
-        return nil
-    end
-    
-    local success, decoded = pcall(function()
-        return HttpUtil.decode(response)
-    end)
-    
-    if success then
-        return decoded
-    else
-        warn("❌ JSON decode failed:", decoded)
-        return nil
-    end
-end
 
 -- ============================================
 -- ROBLOX API: Get Friends
 -- ============================================
 
 function HttpUtil.get_friends(userId)
-    local url = string.format("https://friends.roblox.com/v1/users/%d/friends", userId)
-    local response = HttpUtil.get_json(url)
+    if not Services.is_http_enabled() then
+        warn("❌ HTTP Service is not enabled")
+        return {}
+    end
     
-    if response and response.data then
-        return response.data
+    local url = string.format("https://friends.roblox.com/v1/users/%d/friends", userId)
+    
+    local success, response = pcall(function()
+        return Services.HttpService:GetAsync(url)
+    end)
+    
+    if not success then
+        warn("❌ HTTP GET failed:", response)
+        return {}
+    end
+    
+    local decoded = pcall(function()
+        return HttpUtil.decode(response)
+    end)
+    
+    if decoded and decoded.data then
+        return decoded.data
     end
     return {}
 end
@@ -94,9 +69,27 @@ end
 -- ============================================
 
 function HttpUtil.get_user_info(userId)
+    if not Services.is_http_enabled() then
+        warn("❌ HTTP Service is not enabled")
+        return nil
+    end
+    
     local url = string.format("https://users.roblox.com/v1/users/%d", userId)
-    local response = HttpUtil.get_json(url)
-    return response
+    
+    local success, response = pcall(function()
+        return Services.HttpService:GetAsync(url)
+    end)
+    
+    if not success then
+        warn("❌ HTTP GET failed:", response)
+        return nil
+    end
+    
+    local decoded = pcall(function()
+        return HttpUtil.decode(response)
+    end)
+    
+    return decoded
 end
 
 -- ============================================
