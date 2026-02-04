@@ -179,6 +179,7 @@ local function enable()
             lastPos[p] = nil
             lastHealth[p] = nil
         end)
+        show_notification("Notifikasi", "Notifikasi siap. Perubahan koneksi akan ditampilkan di sini.", "🔔")
     end)
 end
 

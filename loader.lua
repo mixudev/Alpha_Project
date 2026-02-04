@@ -211,6 +211,7 @@ local function load_all()
     local PlayerList = require_module("player/list")
     local PlayerSpectate = require_module("player/spectate")
     local PlayerInfoPopup = require_module("player/info_popup")
+    local Tracker = require_module("player/tracker")
     
     print("✅ Player System loaded")
     
@@ -259,6 +260,7 @@ local function load_all()
     local playersPage = UIPages.create("Players", UIStructure.content)
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
+    local trackerPage = UIPages.create("Tracker", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
     local function render_players()
@@ -274,6 +276,11 @@ local function load_all()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, dronePage)
     end
 
+    local function render_tracker()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, trackerPage)
+        pcall(function() Tracker.create(trackerPage) end)
+    end
+
     local function render_info()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, infoPage)
     end
@@ -281,7 +288,8 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, render_players)
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 4, render_info)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 5, render_info)
 
     -- Default
     render_players()
