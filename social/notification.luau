@@ -13,8 +13,11 @@ local Notification = {}
 -- SHOW NOTIFICATION
 -- ============================================
 
-function Notification.show_mutual_friend(player, mutuals)
-    if not player or #mutuals == 0 then return end
+function Notification.show_mutual_friend(player)
+    if not player then return end
+    
+    local isFriend = Settings.friends.playerMutualFriends[player] == true
+    if not isFriend then return end
     
     local ScreenGui = Services.CoreGui:FindFirstChild("AlphaGUI")
     if not ScreenGui then return end
@@ -83,23 +86,18 @@ function Notification.show_mutual_friend(player, mutuals)
     playerNameLabel.TextXAlignment = Enum.TextXAlignment.Left
     playerNameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     
-    -- Mutual Friends Text
-    local mutualText = "Mutual friend: " .. (mutuals[1].displayName or mutuals[1].name)
-    if #mutuals > 1 then
-        mutualText = mutualText .. " +" .. (#mutuals - 1) .. " more"
-    end
-    
-    local mutualLabel = Instance.new("TextLabel")
-    mutualLabel.Parent = textContainer
-    mutualLabel.BackgroundTransparency = 1
-    mutualLabel.Position = UDim2.new(0, 0, 0, 25)
-    mutualLabel.Size = UDim2.new(1, 0, 0, 20)
-    mutualLabel.Font = Enum.Font.Gotham
-    mutualLabel.Text = mutualText
-    mutualLabel.TextColor3 = Settings.colors.status_on
-    mutualLabel.TextSize = 13
-    mutualLabel.TextXAlignment = Enum.TextXAlignment.Left
-    mutualLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    -- Friend Status Text
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Parent = textContainer
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Position = UDim2.new(0, 0, 0, 25)
+    statusLabel.Size = UDim2.new(1, 0, 0, 20)
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.Text = "🤝 Your friend"
+    statusLabel.TextColor3 = Settings.colors.status_on
+    statusLabel.TextSize = 13
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
     
     -- Connection Text
     local connectionLabel = Instance.new("TextLabel")

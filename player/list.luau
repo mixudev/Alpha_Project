@@ -74,9 +74,8 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder)
     corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = playerFrame
     
-    -- Check mutual friends border
-    local hasMutual = Settings.friends.playerMutualFriends[player] and 
-                      #Settings.friends.playerMutualFriends[player] > 0
+    -- Check mutual friends border (now boolean: true if player is a friend)
+    local hasMutual = Settings.friends.playerMutualFriends[player] == true
     
     if hasMutual and Settings.features.globalFriendEnabled then
         local mutualStroke = Instance.new("UIStroke")

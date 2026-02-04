@@ -34,6 +34,23 @@ function Connections.setup_player_events()
     
     Services.Players.PlayerAdded:Connect(function(p)
         Settings.playerJoinTimes[p] = tick()
+        
+        -- Check mutual friends when player joins
+        if Settings.friends.friendDataLoaded then
+            task.delay(0.5, function()
+                local MutualChecker = require(script.Parent.Parent:FindFirstChild("social/mutual_checker"))
+                local Notification = require(script.Parent.Parent:FindFirstChild("social/notification"))
+                
+                if MutualChecker and Notification then
+                    MutualChecker.check(p)
+                    
+                    -- Show notification if friend and global friend enabled
+                    if MutualChecker.has_mutual(p) and Settings.features.globalFriendEnabled then
+                        Notification.show_mutual_friend(p)
+                    end
+                end
+            end)
+        end
     end)
     
     Services.Players.PlayerRemoving:Connect(function(p)
