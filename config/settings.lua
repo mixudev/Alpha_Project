@@ -13,8 +13,6 @@ Settings.features = {
     infinityJump = false,
     flyEnabled = false,
     noClipEnabled = false,
-    espEnabled = false,
-    infinityZoomEnabled = false,
 }
 
 -- ============================================
