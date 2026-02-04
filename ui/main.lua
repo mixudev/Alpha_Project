@@ -14,7 +14,8 @@ local UIMain = {}
 -- CREATE MAIN GUI STRUCTURE
 -- ============================================
 
-function UIMain.create()
+function UIMain.create(options)
+    options = options or {}
     -- Main ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "AlphaGUI"
@@ -218,9 +219,16 @@ function UIMain.create()
         MainFrame.Visible = not MainFrame.Visible
     end)
     
-    -- Close Click
-    CloseButton.MouseButton1Click:Connect(function()
+    -- Close Click: konfirmasi + callback (reset fitur lalu tutup)
+    local function doClose()
         pcall(function() ScreenGui:Destroy() end)
+    end
+    CloseButton.MouseButton1Click:Connect(function()
+        if type(options.onCloseRequested) == "function" then
+            options.onCloseRequested(doClose)
+        else
+            doClose()
+        end
     end)
     
     -- Toggle Icon Hover

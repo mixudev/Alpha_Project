@@ -1,14 +1,12 @@
 --[[
     Alpha Project - Notifikasi Koneksi
-    Popup notifikasi perubahan koneksi kita: pindah area, nyawa hilang.
-    Hanya untuk koneksi (teman), tampil di atas seperti admin Roblox.
+    Popup notifikasi: koneksi join, koneksi sama join/sudah di map, pindah area, nyawa, dll.
 ]]
 
 local Alpha = rawget(_G, "Alpha")
 local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
 local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
 local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or require(script.Parent.Parent:FindFirstChild("utils/http"))
-local TweenUtil = (Alpha and Alpha.require) and Alpha.require("utils/tween") or require(script.Parent.Parent:FindFirstChild("utils/tween"))
 
 local NotifikasiFeature = {}
 
@@ -31,6 +29,46 @@ local function get_friends_in_game()
         end
     end
     return list
+end
+
+-- Koneksi sama = di server, teman dari teman kita (bukan teman kita)
+local function get_shared_connections(callback)
+    local direct = get_friends_in_game()
+    local inServer = {}
+    for _, p in ipairs(Services.Players:GetPlayers()) do
+        if p ~= Services.LocalPlayer then
+            inServer[p.UserId] = p
+        end
+    end
+    local friendIds = Settings.friendIds or {}
+    local sharedSet = {}
+    local count = 0
+    local total = #direct
+    local called = false
+    if total == 0 then
+        if callback then callback({}) end
+        return
+    end
+    for _, friend in ipairs(direct) do
+        task.spawn(function()
+            local friends = HttpUtil.get_friends(friend.UserId)
+            for _, f in ipairs(friends or {}) do
+                local uid = f.id
+                if uid and inServer[uid] and not friendIds[uid] then
+                    sharedSet[inServer[uid]] = true
+                end
+            end
+            count = count + 1
+            if count >= total and callback and not called then
+                called = true
+                local list = {}
+                for p, _ in pairs(sharedSet) do
+                    table.insert(list, p)
+                end
+                callback(list)
+            end
+        end)
+    end
 end
 
 local function ensure_friends_loaded(callback)
@@ -164,6 +202,28 @@ local function check_friends()
     end
 end
 
+local function on_player_added(player)
+    if not Settings.features.notifikasiEnabled then return end
+    if player == Services.LocalPlayer then return end
+    local name = player.DisplayName or player.Name
+    local friendIds = Settings.friendIds or {}
+    if friendIds[player.UserId] then
+        show_notification("Koneksi join", name .. " masuk server", "👋")
+        return
+    end
+    task.spawn(function()
+        get_shared_connections(function(shared)
+            if not Settings.features.notifikasiEnabled then return end
+            for _, p in ipairs(shared) do
+                if p == player then
+                    show_notification("Koneksi sama join", name .. " masuk server", "◇")
+                    break
+                end
+            end
+        end)
+    end)
+end
+
 local function enable()
     Settings.features.notifikasiEnabled = true
     ensure_friends_loaded(function()
@@ -172,14 +232,32 @@ local function enable()
         lastHealth = {}
         lastCheck = 0
         checkConn = Services.RunService.Heartbeat:Connect(check_friends)
-        playerAddedConn = Services.Players.PlayerAdded:Connect(function()
-            if Settings.features.notifikasiEnabled then ensure_friends_loaded(function() end) end
-        end)
+        playerAddedConn = Services.Players.PlayerAdded:Connect(on_player_added)
         playerRemovingConn = Services.Players.PlayerRemoving:Connect(function(p)
             lastPos[p] = nil
             lastHealth[p] = nil
         end)
         show_notification("Notifikasi", "Notifikasi siap. Perubahan koneksi akan ditampilkan di sini.", "🔔")
+        -- Koneksi / koneksi sama yang sudah di map (sudah join sebelum kita) — setelah notif siap
+        task.delay(DISPLAY_TIME + 0.5, function()
+            if not Settings.features.notifikasiEnabled then return end
+            local friends = get_friends_in_game()
+            if #friends > 0 then
+                local names = {}
+                for _, p in ipairs(friends) do
+                    table.insert(names, p.DisplayName or p.Name)
+                end
+                show_notification("Koneksi di map", table.concat(names, ", ") .. " sudah di map", "◆")
+            end
+            get_shared_connections(function(shared)
+                if not Settings.features.notifikasiEnabled or #shared == 0 then return end
+                local names = {}
+                for _, p in ipairs(shared) do
+                    table.insert(names, p.DisplayName or p.Name)
+                end
+                show_notification("Koneksi sama di map", table.concat(names, ", ") .. " sudah di map", "◇")
+            end)
+        end)
     end)
 end
 

@@ -250,7 +250,93 @@ local function load_all()
     -- ============================================
     
     print("🎨 Creating UI...")
-    local UIStructure = UIMain.create()
+    local function on_close_requested(doClose)
+        local CoreGui = CoreServices.CoreGui or game:GetService("CoreGui")
+        local confirmGui = Instance.new("ScreenGui")
+        confirmGui.Name = "AlphaCloseConfirm"
+        confirmGui.ResetOnSpawn = false
+        confirmGui.DisplayOrder = 300
+        confirmGui.Parent = CoreGui
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        overlay.BackgroundTransparency = 0.5
+        overlay.BorderSizePixel = 0
+        overlay.Parent = confirmGui
+        local box = Instance.new("Frame")
+        box.Size = UDim2.new(0, 320, 0, 140)
+        box.Position = UDim2.new(0.5, -160, 0.5, -70)
+        box.BackgroundColor3 = Config.colors.bg_medium
+        box.BorderSizePixel = 0
+        box.Parent = confirmGui
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = box
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Config.colors.text_tertiary
+        stroke.Thickness = 1
+        stroke.Transparency = 0.6
+        stroke.Parent = box
+        local msg = Instance.new("TextLabel")
+        msg.Parent = box
+        msg.Size = UDim2.new(1, -24, 0, 50)
+        msg.Position = UDim2.new(0, 12, 0, 16)
+        msg.BackgroundTransparency = 1
+        msg.Font = Enum.Font.Gotham
+        msg.Text = "Yakin tutup? Semua fitur akan dimatikan."
+        msg.TextColor3 = Config.colors.text_primary
+        msg.TextSize = 14
+        msg.TextWrapped = true
+        msg.TextXAlignment = Enum.TextXAlignment.Center
+        local function destroy_confirm()
+            pcall(function() confirmGui:Destroy() end)
+        end
+        local function yes_close()
+            pcall(function() FlyFeature.toggle(false) end)
+            pcall(function() NoClipFeature.toggle(false) end)
+            pcall(function() InfinityJump.toggle(false) end)
+            pcall(function() EspFeature.toggle(false) end)
+            pcall(function() InfinityZoomFeature.toggle(false) end)
+            pcall(function() TrackingFriendsFeature.toggle(false) end)
+            pcall(function() NotifikasiFeature.toggle(false) end)
+            pcall(function() AntiAfkFeature.toggle(false) end)
+            pcall(function() DroneFeature.toggle(false) end)
+            pcall(function() NightVisionFeature.toggle(false) end)
+            pcall(function() ChamsFeature.toggle(false) end)
+            Config.reset_all_features()
+            destroy_confirm()
+            doClose()
+        end
+        local noBtn = Instance.new("TextButton")
+        noBtn.Parent = box
+        noBtn.Size = UDim2.new(0.4, -16, 0, 36)
+        noBtn.Position = UDim2.new(0.08, 0, 0, 88)
+        noBtn.BackgroundColor3 = Config.colors.bg_light
+        noBtn.BorderSizePixel = 0
+        noBtn.Font = Enum.Font.GothamBold
+        noBtn.Text = "Tidak"
+        noBtn.TextColor3 = Config.colors.text_secondary
+        noBtn.TextSize = 13
+        noBtn.MouseButton1Click:Connect(destroy_confirm)
+        local noCorner = Instance.new("UICorner")
+        noCorner.CornerRadius = UDim.new(0, 6)
+        noCorner.Parent = noBtn
+        local yesBtn = Instance.new("TextButton")
+        yesBtn.Parent = box
+        yesBtn.Size = UDim2.new(0.4, -16, 0, 36)
+        yesBtn.Position = UDim2.new(0.52, 0, 0, 88)
+        yesBtn.BackgroundColor3 = Color3.fromRGB(180, 80, 80)
+        yesBtn.BorderSizePixel = 0
+        yesBtn.Font = Enum.Font.GothamBold
+        yesBtn.Text = "Ya, tutup"
+        yesBtn.TextColor3 = Config.colors.text_primary
+        yesBtn.TextSize = 13
+        yesBtn.MouseButton1Click:Connect(yes_close)
+        local yesCorner = Instance.new("UICorner")
+        yesCorner.CornerRadius = UDim.new(0, 6)
+        yesCorner.Parent = yesBtn
+    end
+    local UIStructure = UIMain.create({ onCloseRequested = on_close_requested })
     if not UIStructure then
         warn("❌ Failed to create main UI")
         return false

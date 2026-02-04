@@ -1,6 +1,7 @@
 --[[
     Alpha Project - Tracker
-    List koneksi kita + player dengan koneksi sama (shared). Info: koneksi di map + 5 koneksi.
+    List koneksi kita + koneksi sama (sugest). Info: koneksi di map + 5 koneksi.
+    Desain sama dengan halaman lain (Players/Settings).
 ]]
 
 local Alpha = rawget(_G, "Alpha")
@@ -11,10 +12,8 @@ local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/componen
 
 local Tracker = {}
 
-local BORDER_DIRECT = Color3.fromRGB(0, 180, 165)
-local BORDER_SHARED = Color3.fromRGB(180, 140, 40)
-local BG_SECTION = Color3.fromRGB(28, 32, 38)
-local ACCENT_CYAN = Color3.fromRGB(0, 200, 185)
+local BORDER_DIRECT = Color3.fromRGB(0, 130, 115)
+local BORDER_SHARED = Color3.fromRGB(130, 100, 0)
 
 -- ============================================
 -- HELPERS
@@ -45,7 +44,6 @@ local function get_direct_connections()
     return list
 end
 
--- Player dengan koneksi sama = di server yang punya teman yang sama dengan kita (belum teman kita)
 local function get_shared_connections(callback)
     local direct = get_direct_connections()
     local inServer = {}
@@ -86,101 +84,57 @@ local function get_shared_connections(callback)
 end
 
 -- ============================================
--- ENTRY ROW (tampilan lebih menarik)
+-- ENTRY ROW (sama style dengan Players list)
 -- ============================================
 
 local function create_entry(parent, player, layoutOrder, isDirect)
-    local borderColor = isDirect and BORDER_DIRECT or BORDER_SHARED
     local playerFrame = Instance.new("Frame")
     playerFrame.Name = player.Name
     playerFrame.Parent = parent
     playerFrame.BackgroundColor3 = Settings.colors.bg_light
-    playerFrame.Size = UDim2.new(1, -20, 0, 48)
+    playerFrame.Size = UDim2.new(1, -20, 0, 42)
     playerFrame.LayoutOrder = layoutOrder
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = playerFrame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = borderColor
-    stroke.Thickness = 2
-    stroke.Transparency = 0.2
+    stroke.Color = isDirect and BORDER_DIRECT or BORDER_SHARED
+    stroke.Thickness = 1
+    stroke.Transparency = 0
     stroke.Parent = playerFrame
-
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Parent = playerFrame
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Position = UDim2.new(0, 14, 0, 0)
-    iconLabel.Size = UDim2.new(0, 48, 1, 0)
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.Text = isDirect and "◆" or "◇"
-    iconLabel.TextColor3 = borderColor
-    iconLabel.TextSize = 18
-    iconLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Parent = playerFrame
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Position = UDim2.new(0, 56, 0, 0)
-    nameLabel.Size = UDim2.new(0.45, -60, 1, 0)
-    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Position = UDim2.new(0, 12, 0, 0)
+    nameLabel.Size = UDim2.new(0.5, -20, 1, 0)
+    nameLabel.Font = Enum.Font.Gotham
     nameLabel.Text = player.DisplayName or player.Name
-    nameLabel.TextColor3 = Settings.colors.text_primary
-    nameLabel.TextSize = 14
+    nameLabel.TextColor3 = Settings.colors.text_secondary
+    nameLabel.TextSize = 13
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
-    local infoBtn = ButtonComponent.new(playerFrame, "Info", UDim2.new(0.55, 8, 0.5, -16), function()
+    local infoBtn = ButtonComponent.new(playerFrame, "Info", UDim2.new(0.55, 5, 0.5, -16), function()
         Tracker.show_connection_info(player)
     end)
-    infoBtn.Size = UDim2.new(0.38, -16, 0, 32)
+    infoBtn.Size = UDim2.new(0.4, -15, 0, 32)
 end
 
--- ============================================
--- SECTION CARD (header menarik)
--- ============================================
-
-local function create_section_card(parent, title, icon, layoutOrder)
-    local card = Instance.new("Frame")
-    card.Name = "Section_" .. (icon or title)
-    card.Parent = parent
-    card.BackgroundColor3 = BG_SECTION
-    card.BorderSizePixel = 0
-    card.Size = UDim2.new(1, -20, 0, 44)
-    card.LayoutOrder = layoutOrder
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = card
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = ACCENT_CYAN
-    stroke.Thickness = 1
-    stroke.Transparency = 0.6
-    stroke.Parent = card
-
-    local iconLbl = Instance.new("TextLabel")
-    iconLbl.Parent = card
-    iconLbl.BackgroundTransparency = 1
-    iconLbl.Position = UDim2.new(0, 14, 0, 0)
-    iconLbl.Size = UDim2.new(0, 32, 1, 0)
-    iconLbl.Font = Enum.Font.GothamBold
-    iconLbl.Text = icon or "•"
-    iconLbl.TextColor3 = ACCENT_CYAN
-    iconLbl.TextSize = 18
-    iconLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-    local titleLbl = Instance.new("TextLabel")
-    titleLbl.Parent = card
-    titleLbl.BackgroundTransparency = 1
-    titleLbl.Position = UDim2.new(0, 50, 0, 0)
-    titleLbl.Size = UDim2.new(1, -60, 1, 0)
-    titleLbl.Font = Enum.Font.GothamBold
-    titleLbl.Text = title
-    titleLbl.TextColor3 = Settings.colors.text_primary
-    titleLbl.TextSize = 14
-    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+-- Section label (sama seperti Section di halaman lain)
+local function section_label(parent, text, layoutOrder)
+    local lbl = Instance.new("TextLabel")
+    lbl.Parent = parent
+    lbl.BackgroundTransparency = 1
+    lbl.Size = UDim2.new(1, -20, 0, 28)
+    lbl.LayoutOrder = layoutOrder
+    lbl.Font = Enum.Font.Gotham
+    lbl.Text = text
+    lbl.TextColor3 = Settings.colors.text_secondary
+    lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
 end
 
 -- ============================================
@@ -204,61 +158,50 @@ function Tracker.show_connection_info(player)
     popup.Parent = popupGui
     popup.Size = UDim2.new(0, 400, 0, 360)
     popup.Position = UDim2.new(0.5, -200, 0.5, -180)
-    popup.BackgroundColor3 = Color3.fromRGB(24, 28, 34)
+    popup.BackgroundColor3 = Settings.colors.bg_medium
     popup.BorderSizePixel = 0
     popup.Active = true
     popup.Draggable = true
     popup.ZIndex = 1
 
     local pcorner = Instance.new("UICorner")
-    pcorner.CornerRadius = UDim.new(0, 12)
+    pcorner.CornerRadius = UDim.new(0, 10)
     pcorner.Parent = popup
 
     local pstroke = Instance.new("UIStroke")
-    pstroke.Color = ACCENT_CYAN
-    pstroke.Thickness = 2
-    pstroke.Transparency = 0.4
+    pstroke.Color = Color3.fromRGB(100, 100, 120)
+    pstroke.Thickness = 1
+    pstroke.Transparency = 0.3
     pstroke.Parent = popup
 
     local header = Instance.new("Frame")
     header.Parent = popup
-    header.BackgroundColor3 = Color3.fromRGB(30, 36, 44)
+    header.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
     header.BorderSizePixel = 0
-    header.Size = UDim2.new(1, 0, 0, 52)
-    local hcorner = Instance.new("UICorner")
-    hcorner.CornerRadius = UDim.new(0, 12)
-    hcorner.Parent = header
-    local hstroke = Instance.new("UIStroke")
-    hstroke.Color = Color3.fromRGB(0, 160, 150)
-    hstroke.Thickness = 1
-    hstroke.Transparency = 0.6
-    hstroke.Parent = header
+    header.Size = UDim2.new(1, 0, 0, 48)
 
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, -55, 1, 0)
-    title.Position = UDim2.new(0, 16, 0, 0)
+    title.Size = UDim2.new(1, -50, 1, 0)
+    title.Position = UDim2.new(0, 15, 0, 0)
     title.Font = Enum.Font.GothamBold
-    title.Text = "◆ " .. (player.DisplayName or player.Name)
+    title.Text = player.DisplayName or player.Name
     title.TextColor3 = Settings.colors.text_primary
-    title.TextSize = 16
+    title.TextSize = 15
     title.TextXAlignment = Enum.TextXAlignment.Left
 
     local closeBtn = Instance.new("TextButton")
     closeBtn.Parent = header
-    closeBtn.Size = UDim2.new(0, 36, 0, 36)
-    closeBtn.Position = UDim2.new(1, -44, 0.5, -18)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    closeBtn.Size = UDim2.new(0, 32, 0, 32)
+    closeBtn.Position = UDim2.new(1, -40, 0.5, -16)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     closeBtn.BorderSizePixel = 0
     closeBtn.Text = "×"
     closeBtn.TextColor3 = Settings.colors.status_off
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 22
+    closeBtn.TextSize = 20
     closeBtn.AutoButtonColor = false
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeBtn
     closeBtn.MouseButton1Click:Connect(function()
         popupGui:Destroy()
     end)
@@ -266,12 +209,12 @@ function Tracker.show_connection_info(player)
     local content = Instance.new("Frame")
     content.Parent = popup
     content.BackgroundTransparency = 1
-    content.Size = UDim2.new(1, -28, 0, 292)
-    content.Position = UDim2.new(0, 14, 0, 58)
+    content.Size = UDim2.new(1, -24, 0, 298)
+    content.Position = UDim2.new(0, 12, 0, 52)
 
     local loadingLabel = Instance.new("TextLabel")
     loadingLabel.Parent = content
-    loadingLabel.Size = UDim2.new(1, 0, 0, 36)
+    loadingLabel.Size = UDim2.new(1, 0, 0, 30)
     loadingLabel.Position = UDim2.new(0, 0, 0, 0)
     loadingLabel.BackgroundTransparency = 1
     loadingLabel.Font = Enum.Font.Gotham
@@ -295,7 +238,6 @@ function Tracker.show_connection_info(player)
                 end
             end
         end
-        -- Hanya 5 koneksi (bukan 10)
         local koneksi5 = {}
         for i = 1, math.min(5, #(friends or {})) do
             local f = friends[i]
@@ -309,14 +251,14 @@ function Tracker.show_connection_info(player)
             local sect = Instance.new("TextLabel")
             sect.Parent = content
             sect.Position = UDim2.new(0, 0, 0, y)
-            sect.Size = UDim2.new(1, 0, 0, 24)
+            sect.Size = UDim2.new(1, 0, 0, 22)
             sect.BackgroundTransparency = 1
             sect.Font = Enum.Font.GothamBold
             sect.Text = titleText
-            sect.TextColor3 = ACCENT_CYAN
+            sect.TextColor3 = Settings.colors.text_primary
             sect.TextSize = 13
             sect.TextXAlignment = Enum.TextXAlignment.Left
-            y = y + 28
+            y = y + 24
             local text = #lines > 0 and table.concat(lines, ", ") or "Tidak ada."
             local body = Instance.new("TextLabel")
             body.Parent = content
@@ -354,46 +296,45 @@ function Tracker.create(scrollContent)
     ensure_friends_loaded(function()
         local layoutOrder = 0
 
-        -- Section: Koneksi kita (langsung)
+        layoutOrder = 1
+        section_label(scrollContent, "Koneksi kita (di map)", layoutOrder)
         layoutOrder = layoutOrder + 1
-        create_section_card(scrollContent, "Koneksi kita (di map)", "◆", layoutOrder)
         local direct = get_direct_connections()
         for _, p in ipairs(direct) do
-            layoutOrder = layoutOrder + 1
             create_entry(scrollContent, p, layoutOrder, true)
+            layoutOrder = layoutOrder + 1
         end
         if #direct == 0 then
-            layoutOrder = layoutOrder + 1
             local empty = Instance.new("TextLabel")
             empty.Parent = scrollContent
             empty.LayoutOrder = layoutOrder
-            empty.Size = UDim2.new(1, -20, 0, 36)
+            empty.Size = UDim2.new(1, -20, 0, 32)
             empty.BackgroundTransparency = 1
             empty.Font = Enum.Font.Gotham
             empty.Text = "Tidak ada koneksi di map ini."
             empty.TextColor3 = Settings.colors.text_tertiary
             empty.TextSize = 12
+            layoutOrder = layoutOrder + 1
         end
 
-        -- Section: Player dengan koneksi sama (shared)
+        section_label(scrollContent, "Koneksi sama (sugest)", layoutOrder)
         layoutOrder = layoutOrder + 1
-        create_section_card(scrollContent, "Player dengan koneksi sama (belum teman kita)", "◇", layoutOrder)
         get_shared_connections(function(shared)
             for _, p in ipairs(shared) do
-                layoutOrder = layoutOrder + 1
                 create_entry(scrollContent, p, layoutOrder, false)
+                layoutOrder = layoutOrder + 1
             end
             if #shared == 0 then
-                layoutOrder = layoutOrder + 1
                 local empty = Instance.new("TextLabel")
                 empty.Parent = scrollContent
                 empty.LayoutOrder = layoutOrder
-                empty.Size = UDim2.new(1, -20, 0, 36)
+                empty.Size = UDim2.new(1, -20, 0, 32)
                 empty.BackgroundTransparency = 1
                 empty.Font = Enum.Font.Gotham
                 empty.Text = "Tidak ada."
                 empty.TextColor3 = Settings.colors.text_tertiary
                 empty.TextSize = 12
+                layoutOrder = layoutOrder + 1
             end
         end)
     end)
