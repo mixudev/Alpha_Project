@@ -9,9 +9,12 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") or require(script.Parent:FindFirstChild("spectate"))
 local InfoPopup = (Alpha and Alpha.require) and Alpha.require("player/info_popup") or require(script.Parent:FindFirstChild("info_popup"))
 local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent.Parent:FindFirstChild("ui/components/button"))
-local TimeUtil = (Alpha and Alpha.require) and Alpha.require("utils/time") or require(script.Parent.Parent:FindFirstChild("utils/time"))
+local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or require(script.Parent.Parent:FindFirstChild("utils/http"))
 
 local PlayerList = {}
+
+-- Warna border untuk koneksi (hijau toska)
+local BORDER_TOSKA = Color3.fromRGB(0, 200, 180)
 
 -- ============================================
 -- CREATE PLAYER LIST
@@ -51,12 +54,37 @@ function PlayerList.create(scrollContent)
         Spectate.stop()
     end)
     
-    -- List all players (except LocalPlayer)
+    -- Load friends sekali (untuk koneksi di map)
+    if next(Settings.friendIds) == nil and HttpUtil and Services.LocalPlayer then
+        task.spawn(function()
+            local friends = HttpUtil.get_friends(Services.LocalPlayer.UserId)
+            for _, f in ipairs(friends or {}) do
+                if f.id then Settings.friendIds[f.id] = true end
+            end
+            PlayerList.create(scrollContent)
+        end)
+    end
+    
+    -- Urutkan: koneksi (teman) di atas, sisanya di bawah
     local players = Services.Players:GetPlayers()
-    for i, player in ipairs(players) do
-        if player ~= Services.LocalPlayer then
-            PlayerList.create_player_entry(scrollContent, player, i)
+    local friendsFirst, others = {}, {}
+    for _, p in ipairs(players) do
+        if p ~= Services.LocalPlayer then
+            if Settings.friendIds and Settings.friendIds[p.UserId] then
+                table.insert(friendsFirst, p)
+            else
+                table.insert(others, p)
+            end
         end
+    end
+    local order = 1
+    for _, player in ipairs(friendsFirst) do
+        PlayerList.create_player_entry(scrollContent, player, order, true)
+        order = order + 1
+    end
+    for _, player in ipairs(others) do
+        PlayerList.create_player_entry(scrollContent, player, order, false)
+        order = order + 1
     end
 end
 
@@ -64,7 +92,7 @@ end
 -- CREATE PLAYER ENTRY
 -- ============================================
 
-function PlayerList.create_player_entry(scrollContent, player, layoutOrder)
+function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFriend)
     local playerFrame = Instance.new("Frame")
     playerFrame.Name = player.Name
     playerFrame.Parent = scrollContent
@@ -75,6 +103,15 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = playerFrame
+    
+    -- Border hijau toska untuk koneksi (teman di map)
+    if isFriend then
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = BORDER_TOSKA
+        stroke.Thickness = 2
+        stroke.Transparency = 0
+        stroke.Parent = playerFrame
+    end
     
     -- Player Name Label
     local nameLabel = Instance.new("TextLabel")

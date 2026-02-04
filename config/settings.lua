@@ -15,6 +15,7 @@ Settings.features = {
     noClipEnabled = false,
     espEnabled = false,
     infinityZoomEnabled = false,
+    droneEnabled = false,
 }
 
 -- ============================================
@@ -41,6 +42,8 @@ Settings.spectate = {
 -- ============================================
 
 Settings.playerJoinTimes = {}
+-- Friend IDs (userId) untuk highlight koneksi di player list
+Settings.friendIds = {}
 
 -- ============================================
 -- UI STATE

@@ -211,11 +211,6 @@ function InfoPopup.show(player)
         end
     end)
 
-    -- Waktu di map (jika ada tracking)
-    if Settings.playerJoinTimes and Settings.playerJoinTimes[player] then
-        create_info_item("Waktu di Map", TimeUtil.get_time_on_map(Settings.playerJoinTimes[player]), order) order = order + 1
-    end
-
     -- Team
     pcall(function()
         if player.Team and player.Team.Name then

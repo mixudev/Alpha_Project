@@ -221,6 +221,7 @@ local function load_all()
     local InfinityJump = require_module("features/infinity_jump")
     local EspFeature = require_module("features/esp")
     local InfinityZoomFeature = require_module("features/infinity_zoom")
+    local DroneFeature = require_module("features/drone")
     
     print("✅ Features loaded")
 
@@ -254,6 +255,7 @@ local function load_all()
     -- ============================================
     local playersPage = UIPages.create("Players", UIStructure.content)
     local settingsPage = UIPages.create("Settings", UIStructure.content)
+    local dronePage = UIPages.create("Drone", UIStructure.content)
 
     local function render_players()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, playersPage)
@@ -264,8 +266,13 @@ local function load_all()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, settingsPage)
     end
 
+    local function render_drone()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, dronePage)
+    end
+
     UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, render_players)
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
 
     -- Default
     render_players()
@@ -299,6 +306,142 @@ local function load_all()
         Toggle.new(settingsPage, "Infinity Zoom", 7, function(enabled)
             pcall(function() InfinityZoomFeature.toggle(enabled) end)
         end)
+
+        Section.new(settingsPage, "🔊 Audio", 8)
+        -- Volume Map: satu tombol atur semua suara di map (model, angin, dll)
+        do
+            local volLevels = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0}
+            local volIndex = 1
+            local function apply_volume(vol)
+                Config.audio.currentVolume = vol
+                for _, d in pairs(CoreServices.Workspace:GetDescendants()) do
+                    if d:IsA("Sound") then
+                        pcall(function() d.Volume = vol end)
+                    end
+                end
+            end
+            CoreServices.Workspace.DescendantAdded:Connect(function(d)
+                if d:IsA("Sound") then
+                    pcall(function() d.Volume = Config.audio.currentVolume end)
+                end
+            end)
+            local volToggle = Instance.new("TextButton")
+            volToggle.Name = "VolumeMapToggle"
+            volToggle.Parent = settingsPage
+            volToggle.BackgroundColor3 = Config.colors.bg_light
+            volToggle.BorderSizePixel = 0
+            volToggle.Size = UDim2.new(1, -20, 0, Config.sizes.toggle_height)
+            volToggle.LayoutOrder = 9
+            volToggle.Font = Enum.Font.Gotham
+            volToggle.Text = ""
+            volToggle.AutoButtonColor = false
+            local volCorner = Instance.new("UICorner")
+            volCorner.CornerRadius = UDim.new(0, Config.sizes.corner_radius)
+            volCorner.Parent = volToggle
+            local volLabel = Instance.new("TextLabel")
+            volLabel.Parent = volToggle
+            volLabel.BackgroundTransparency = 1
+            volLabel.Position = UDim2.new(0, 12, 0, 0)
+            volLabel.Size = UDim2.new(0.7, 0, 1, 0)
+            volLabel.Font = Enum.Font.Gotham
+            volLabel.Text = "Volume Map (semua suara)"
+            volLabel.TextColor3 = Config.colors.text_secondary
+            volLabel.TextSize = 13
+            volLabel.TextXAlignment = Enum.TextXAlignment.Left
+            local volStatus = Instance.new("TextLabel")
+            volStatus.Parent = volToggle
+            volStatus.BackgroundTransparency = 1
+            volStatus.Position = UDim2.new(0.7, 0, 0, 0)
+            volStatus.Size = UDim2.new(0.3, -15, 1, 0)
+            volStatus.Font = Enum.Font.Gotham
+            volStatus.Text = tostring(math.floor(volLevels[volIndex] * 100)) .. "%"
+            volStatus.TextColor3 = Config.colors.status_on
+            volStatus.TextSize = 13
+            volStatus.TextXAlignment = Enum.TextXAlignment.Right
+            volToggle.MouseButton1Click:Connect(function()
+                volIndex = volIndex + 1
+                if volIndex > #volLevels then volIndex = 1 end
+                local v = volLevels[volIndex]
+                apply_volume(v)
+                volStatus.Text = tostring(math.floor(v * 100)) .. "%"
+                volStatus.TextColor3 = (v == 0 and Config.colors.status_off or Config.colors.status_on)
+            end)
+            apply_volume(volLevels[volIndex])
+        end
+    end
+
+    -- Drone page: keterangan + toggle + speed
+    do
+        local Section = UIComponents.Section
+        local Toggle = UIComponents.Toggle
+        local Settings = Config
+
+        Section.new(dronePage, "📷 Drone / Freecam", 1)
+        local desc = Instance.new("TextLabel")
+        desc.Parent = dronePage
+        desc.BackgroundTransparency = 1
+        desc.Size = UDim2.new(1, -20, 0, 80)
+        desc.LayoutOrder = 2
+        desc.Font = Enum.Font.Gotham
+        desc.Text = "Kamera bebas dengan gerakan smooth.\nWASD = jalan | E/Q = naik/turun | Panah = putar | Klik kanan = putar mouse.\nLeft Shift = pelan | Right Shift = putar cepat."
+        desc.TextColor3 = Settings.colors.text_tertiary
+        desc.TextSize = 12
+        desc.TextXAlignment = Enum.TextXAlignment.Left
+        desc.TextYAlignment = Enum.TextYAlignment.Top
+        desc.TextWrapped = true
+
+        Toggle.new(dronePage, "Drone Aktif", 3, function(enabled)
+            pcall(function() DroneFeature.toggle(enabled) end)
+        end)
+
+        Section.new(dronePage, "Speed", 4)
+        local speedRow = Instance.new("TextButton")
+        speedRow.Name = "SpeedRow"
+        speedRow.Parent = dronePage
+        speedRow.BackgroundColor3 = Settings.colors.bg_light
+        speedRow.BorderSizePixel = 0
+        speedRow.Size = UDim2.new(1, -20, 0, Settings.sizes.toggle_height)
+        speedRow.LayoutOrder = 5
+        speedRow.Font = Enum.Font.Gotham
+        speedRow.Text = ""
+        speedRow.AutoButtonColor = false
+        local speedCorner = Instance.new("UICorner")
+        speedCorner.CornerRadius = UDim.new(0, Settings.sizes.corner_radius)
+        speedCorner.Parent = speedRow
+        local speedLabel = Instance.new("TextLabel")
+        speedLabel.Parent = speedRow
+        speedLabel.BackgroundTransparency = 1
+        speedLabel.Position = UDim2.new(0, 12, 0, 0)
+        speedLabel.Size = UDim2.new(0.6, 0, 1, 0)
+        speedLabel.Font = Enum.Font.Gotham
+        speedLabel.Text = "Speed"
+        speedLabel.TextColor3 = Settings.colors.text_secondary
+        speedLabel.TextSize = 13
+        speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+        local speedVal = Instance.new("TextLabel")
+        speedVal.Parent = speedRow
+        speedVal.Name = "SpeedValue"
+        speedVal.BackgroundTransparency = 1
+        speedVal.Position = UDim2.new(0.6, 0, 0, 0)
+        speedVal.Size = UDim2.new(0.4, -15, 1, 0)
+        speedVal.Font = Enum.Font.GothamBold
+        speedVal.Text = "1.0x"
+        speedVal.TextColor3 = Settings.colors.status_on
+        speedVal.TextSize = 13
+        speedVal.TextXAlignment = Enum.TextXAlignment.Right
+        local speeds = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0}
+        local speedIdx = 2
+        local function update_speed()
+            local s = speeds[speedIdx]
+            DroneFeature.set_speed(s)
+            speedVal.Text = string.format("%.1fx", s)
+        end
+        speedRow.MouseButton1Click:Connect(function()
+            speedIdx = speedIdx + 1
+            if speedIdx > #speeds then speedIdx = 1 end
+            update_speed()
+        end)
+        update_speed()
     end
 
     -- Auto refresh player list (when Players page visible)

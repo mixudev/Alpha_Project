@@ -36,15 +36,18 @@ local function create_esp_for_player(p)
     gui.MaxDistance = 10000
     gui.Parent = Services.CoreGui
 
+    local nameText = p.DisplayName or p.Name
+    -- Title keren: [ NAMA ] dengan font & style
     local label = Instance.new("TextLabel")
     label.Parent = gui
     label.Size = UDim2.new(1, 0, 1, 0)
     label.BackgroundTransparency = 1
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 18
-    label.Text = p.DisplayName or p.Name
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextStrokeTransparency = 0.5
+    label.Font = Enum.Font.Oswald
+    label.TextSize = 20
+    label.Text = "◆ " .. nameText .. " ◆"
+    label.TextColor3 = Color3.fromRGB(0, 255, 230)
+    label.TextStrokeColor3 = Color3.fromRGB(0, 80, 90)
+    label.TextStrokeTransparency = 0.2
     label.TextXAlignment = Enum.TextXAlignment.Center
     label.TextYAlignment = Enum.TextYAlignment.Center
 

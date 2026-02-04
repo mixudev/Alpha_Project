@@ -10,9 +10,10 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 local InfinityZoomFeature = {}
 
 local DEFAULT_MAX_ZOOM = 128
-local INFINITY_MAX_ZOOM = 10000
+local INFINITY_MAX_ZOOM = 100000
 
 local zoomConnection = nil
+local zoomChangedConnection = nil
 
 -- ============================================
 -- APPLY ZOOM LIMIT
@@ -32,13 +33,22 @@ end
 local function enable_infinity_zoom()
     Settings.features.infinityZoomEnabled = true
     apply_max_zoom(INFINITY_MAX_ZOOM)
-    -- Keep applying every frame in case game/camera resets it
+    local cam = Services.Camera
+    if not cam then return end
+    -- Re-apply saat game/script lain mengubah MaxZoom
+    if zoomChangedConnection then zoomChangedConnection:Disconnect() end
+    zoomChangedConnection = cam:GetPropertyChangedSignal("MaxZoom"):Connect(function()
+        if Settings.features.infinityZoomEnabled and cam.MaxZoom ~= INFINITY_MAX_ZOOM then
+            cam.MaxZoom = INFINITY_MAX_ZOOM
+        end
+    end)
+    -- Juga paksa setiap frame (banyak game override di camera script)
     if zoomConnection then zoomConnection:Disconnect() end
     zoomConnection = Services.RunService.RenderStepped:Connect(function()
         if not Settings.features.infinityZoomEnabled then return end
-        local cam = Services.Camera
-        if cam and cam.MaxZoom ~= INFINITY_MAX_ZOOM then
-            cam.MaxZoom = INFINITY_MAX_ZOOM
+        local c = Services.Camera
+        if c and c.MaxZoom ~= INFINITY_MAX_ZOOM then
+            c.MaxZoom = INFINITY_MAX_ZOOM
         end
     end)
 end
@@ -48,6 +58,10 @@ local function disable_infinity_zoom()
     if zoomConnection then
         zoomConnection:Disconnect()
         zoomConnection = nil
+    end
+    if zoomChangedConnection then
+        zoomChangedConnection:Disconnect()
+        zoomChangedConnection = nil
     end
     apply_max_zoom(DEFAULT_MAX_ZOOM)
 end
