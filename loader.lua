@@ -258,6 +258,7 @@ local function load_all()
     local playersPage = UIPages.create("Players", UIStructure.content)
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
+    local infoPage = UIPages.create("Info", UIStructure.content)
 
     local function render_players()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, playersPage)
@@ -272,9 +273,14 @@ local function load_all()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, dronePage)
     end
 
+    local function render_info()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, infoPage)
+    end
+
     UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, render_players)
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 4, render_info)
 
     -- Default
     render_players()
@@ -301,7 +307,7 @@ local function load_all()
 
         Section.new(settingsPage, "🔍 ESP & Camera", 5)
 
-        Toggle.new(settingsPage, "ESP (lihat player dari jauh)", 6, function(enabled)
+        Toggle.new(settingsPage, "ESP", 6, function(enabled)
             pcall(function() EspFeature.toggle(enabled) end)
         end)
 
@@ -309,7 +315,7 @@ local function load_all()
             pcall(function() InfinityZoomFeature.toggle(enabled) end)
         end)
 
-        Toggle.new(settingsPage, "Tracking Friends (scanner koneksi)", 8, function(enabled)
+        Toggle.new(settingsPage, "Tracking Friends", 8, function(enabled)
             pcall(function() TrackingFriendsFeature.toggle(enabled) end)
         end)
 
@@ -355,7 +361,7 @@ local function load_all()
             volLabel.Position = UDim2.new(0, 12, 0, 0)
             volLabel.Size = UDim2.new(0.7, 0, 1, 0)
             volLabel.Font = Enum.Font.Gotham
-            volLabel.Text = "Volume Map (semua suara)"
+            volLabel.Text = "Volume Map"
             volLabel.TextColor3 = Config.colors.text_secondary
             volLabel.TextSize = 13
             volLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -453,6 +459,119 @@ local function load_all()
             update_speed()
         end)
         update_speed()
+    end
+
+    -- Info page: pembuat GUI + detail server
+    do
+        local Section = UIComponents.Section
+        local Settings = Config
+        local Players = CoreServices.Players
+        local RunService = CoreServices.RunService
+        local Lighting = CoreServices.Workspace:FindFirstChildOfClass("Lighting") or game:GetService("Lighting")
+        local creatorBox = Instance.new("Frame")
+        creatorBox.Name = "CreatorBox"
+        creatorBox.Parent = infoPage
+        creatorBox.BackgroundColor3 = Settings.colors.bg_light
+        creatorBox.BorderSizePixel = 0
+        creatorBox.Size = UDim2.new(1, -20, 0, 90)
+        creatorBox.LayoutOrder = 1
+        local creatorCorner = Instance.new("UICorner")
+        creatorCorner.CornerRadius = UDim.new(0, Settings.sizes.corner_radius)
+        creatorCorner.Parent = creatorBox
+        local creatorStroke = Instance.new("UIStroke")
+        creatorStroke.Color = Settings.colors.text_tertiary
+        creatorStroke.Thickness = 1
+        creatorStroke.Transparency = 0.7
+        creatorStroke.Parent = creatorBox
+        local creatorTitle = Instance.new("TextLabel")
+        creatorTitle.Parent = creatorBox
+        creatorTitle.BackgroundTransparency = 1
+        creatorTitle.Position = UDim2.new(0, 15, 0, 10)
+        creatorTitle.Size = UDim2.new(1, -30, 0, 22)
+        creatorTitle.Font = Enum.Font.GothamBold
+        creatorTitle.Text = "Alpha Project"
+        creatorTitle.TextColor3 = Settings.colors.text_primary
+        creatorTitle.TextSize = 16
+        creatorTitle.TextXAlignment = Enum.TextXAlignment.Left
+        local creatorName = Instance.new("TextLabel")
+        creatorName.Parent = creatorBox
+        creatorName.BackgroundTransparency = 1
+        creatorName.Position = UDim2.new(0, 15, 0, 34)
+        creatorName.Size = UDim2.new(1, -30, 0, 20)
+        creatorName.Font = Enum.Font.Gotham
+        creatorName.Text = "Lazuardi Mandegar"
+        creatorName.TextColor3 = Settings.colors.text_secondary
+        creatorName.TextSize = 14
+        creatorName.TextXAlignment = Enum.TextXAlignment.Left
+        local creatorRole = Instance.new("TextLabel")
+        creatorRole.Parent = creatorBox
+        creatorRole.BackgroundTransparency = 1
+        creatorRole.Position = UDim2.new(0, 15, 0, 54)
+        creatorRole.Size = UDim2.new(1, -30, 0, 18)
+        creatorRole.Font = Enum.Font.Gotham
+        creatorRole.Text = "Developer · GUI & Script"
+        creatorRole.TextColor3 = Settings.colors.text_tertiary
+        creatorRole.TextSize = 12
+        creatorRole.TextXAlignment = Enum.TextXAlignment.Left
+
+        Section.new(infoPage, "Detail Server", 2)
+        local function add_info_row(parent, label, value, order)
+            local row = Instance.new("Frame")
+            row.Parent = parent
+            row.BackgroundColor3 = Settings.colors.bg_light
+            row.BorderSizePixel = 0
+            row.Size = UDim2.new(1, -20, 0, 32)
+            row.LayoutOrder = order
+            local rowCorner = Instance.new("UICorner")
+            rowCorner.CornerRadius = UDim.new(0, 4)
+            rowCorner.Parent = row
+            local lbl = Instance.new("TextLabel")
+            lbl.Parent = row
+            lbl.BackgroundTransparency = 1
+            lbl.Position = UDim2.new(0, 12, 0, 0)
+            lbl.Size = UDim2.new(0.4, 0, 1, 0)
+            lbl.Font = Enum.Font.Gotham
+            lbl.Text = label
+            lbl.TextColor3 = Settings.colors.text_tertiary
+            lbl.TextSize = 12
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            local val = Instance.new("TextLabel")
+            val.Parent = row
+            val.BackgroundTransparency = 1
+            val.Position = UDim2.new(0.45, 0, 0, 0)
+            val.Size = UDim2.new(0.55, -12, 1, 0)
+            val.Font = Enum.Font.GothamBold
+            val.Text = tostring(value)
+            val.TextColor3 = Settings.colors.text_primary
+            val.TextSize = 12
+            val.TextXAlignment = Enum.TextXAlignment.Right
+            val.TextTruncate = Enum.TextTruncate.AtEnd
+        end
+        local placeId = game.PlaceId or 0
+        local jobId = game.JobId or "N/A"
+        local gameName = game.Name or "—"
+        pcall(function()
+            if placeId and placeId > 0 then
+                local info = game:GetService("MarketplaceService"):GetProductInfo(placeId, Enum.InfoType.Asset)
+                if info and info.Name then gameName = info.Name end
+            end
+        end)
+        local creatorType = tostring(game.CreatorType or "Unknown")
+        local creatorId = tostring(game.CreatorId or "—")
+        local maxPlayers = Players.MaxPlayers
+        local numPlayers = #Players:GetPlayers()
+        local isStudio = RunService:IsStudio()
+        local env = isStudio and "Studio" or "Live"
+        add_info_row(infoPage, "Nama Game", game.Name or "—", 3)
+        add_info_row(infoPage, "Place ID", placeId, 4)
+        add_info_row(infoPage, "Job ID", jobId, 5)
+        add_info_row(infoPage, "Creator Type", creatorType, 6)
+        add_info_row(infoPage, "Creator ID", creatorId, 7)
+        add_info_row(infoPage, "Pemain", numPlayers .. " / " .. maxPlayers, 8)
+        add_info_row(infoPage, "Lingkungan", env, 9)
+        if Lighting then
+            add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 10)
+        end
     end
 
     -- Auto refresh player list (when Players page visible)

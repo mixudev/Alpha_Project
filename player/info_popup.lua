@@ -32,25 +32,29 @@ end
 function InfoPopup.show(player)
     if not player then return end
     
-    local ScreenGui = Services.CoreGui:FindFirstChild("AlphaGUI")
-    if not ScreenGui then return end
+    local existingGui = Services.CoreGui:FindFirstChild("AlphaPlayerInfoGui")
+    if existingGui then existingGui:Destroy() end
     
-    -- Remove existing popup
-    local existing = ScreenGui:FindFirstChild("AlphaPlayerInfo")
-    if existing then existing:Destroy() end
+    local popupGui = Instance.new("ScreenGui")
+    popupGui.Name = "AlphaPlayerInfoGui"
+    popupGui.ResetOnSpawn = false
+    popupGui.DisplayOrder = 100
+    popupGui.Parent = Services.CoreGui
     
     -- ============================================
-    -- MAIN POPUP FRAME
+    -- MAIN POPUP FRAME (draggable, di depan menu)
     -- ============================================
     
     local popup = Instance.new("Frame")
     popup.Name = "AlphaPlayerInfo"
-    popup.Parent = ScreenGui
+    popup.Parent = popupGui
     popup.Size = UDim2.new(0, 420, 0, 450)
     popup.Position = UDim2.new(0.5, -210, 0.5, -225)
     popup.BackgroundColor3 = Settings.colors.bg_medium
     popup.BorderSizePixel = 0
-    popup.ZIndex = 20
+    popup.Active = true
+    popup.Draggable = true
+    popup.ZIndex = 1
     
     local pcorner = Instance.new("UICorner")
     pcorner.CornerRadius = UDim.new(0, 10)
@@ -118,7 +122,7 @@ function InfoPopup.show(player)
     closeCorner.Parent = closeBtn
     
     closeBtn.MouseButton1Click:Connect(function()
-        pcall(function() popup:Destroy() end)
+        pcall(function() popupGui:Destroy() end)
     end)
     
     -- ============================================

@@ -172,7 +172,7 @@ function UIMain.create()
     contentCorner.Parent = MainContent
     
     -- ============================================
-    -- TOGGLE ICON (bisa digeser, icon menu profesional)
+    -- TOGGLE ICON (fixed tengah kiri, roket)
     -- ============================================
     
     local ToggleIcon = Instance.new("TextButton")
@@ -182,9 +182,9 @@ function UIMain.create()
     ToggleIcon.BorderSizePixel = 0
     ToggleIcon.Size = UDim2.new(0, 50, 0, 50)
     ToggleIcon.Position = UDim2.new(0, 10, 0.5, -25)
-    ToggleIcon.Text = "☰"
+    ToggleIcon.Text = "🚀"
     ToggleIcon.TextColor3 = Settings.colors.text_secondary
-    ToggleIcon.TextSize = 26
+    ToggleIcon.TextSize = 24
     ToggleIcon.Font = Enum.Font.GothamBold
     ToggleIcon.AutoButtonColor = false
     ToggleIcon.Active = true
@@ -200,47 +200,12 @@ function UIMain.create()
     toggleStroke.Transparency = 0.5
     toggleStroke.Parent = ToggleIcon
     
-    -- Drag: geser icon
-    local iconDragging = false
-    local iconDragStart = nil
-    local iconStartPos = nil
-    ToggleIcon.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            iconDragging = false
-            iconDragStart = input.Position
-            iconStartPos = ToggleIcon.Position
-        end
-    end)
-    ToggleIcon.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if iconDragStart and (input.Position - iconDragStart).Magnitude > 6 then
-                iconDragging = true
-            end
-        end
-    end)
-    Services.UserInputService.InputChanged:Connect(function(input)
-        if not iconDragging or not iconStartPos or not iconDragStart then return end
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            local delta = input.Position - iconDragStart
-            ToggleIcon.Position = UDim2.new(
-                iconStartPos.X.Scale, iconStartPos.X.Offset + delta.X,
-                iconStartPos.Y.Scale, iconStartPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    ToggleIcon.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not iconDragging and iconStartPos then
-                MainFrame.Visible = not MainFrame.Visible
-                if MainFrame.Visible then
-                    TweenUtil.color(toggleStroke, Color3.fromRGB(150, 150, 160))
-                else
-                    TweenUtil.fade(toggleStroke, 0.7, 0.2)
-                end
-            end
-            iconDragging = false
-            iconDragStart = nil
-            iconStartPos = nil
+    ToggleIcon.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+        if MainFrame.Visible then
+            TweenUtil.color(toggleStroke, Color3.fromRGB(150, 150, 160))
+        else
+            TweenUtil.fade(toggleStroke, 0.7, 0.2)
         end
     end)
     

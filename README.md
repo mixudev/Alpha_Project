@@ -4,9 +4,10 @@ Menu utilitas untuk Roblox (Local / Executor). Ringan dan terintegrasi dalam sat
 
 ## Fitur
 
-- **Players** — Daftar pemain, Info (umur akun, koneksi, game dibuat), POV, Teleport. Koneksi (teman) di atas dengan tema toska.
-- **Settings** — Infinity Jump, Fly, No Clip, ESP (nama per jarak: hijau/kuning/merah), Infinity Zoom, **Tracking Friends** (scanner koneksi: lingkaran + avatar + garis arah), Volume Map, Anti-AFK.
-- **Drone** — Freecam smooth (WASD, E/Q, panah, klik kanan), Speed, ON/OFF.
+- **Players** — Daftar pemain, Info, POV, Teleport. Koneksi di atas dengan border hijau.
+- **Settings** — Infinity Jump, Fly, No Clip, ESP, Infinity Zoom, Tracking Friends, Volume Map, Anti-AFK.
+- **Drone** — Freecam smooth, Speed, ON/OFF.
+- **Info** — Pembuat GUI (Lazuardi Mandegar), detail server (Place ID, Job ID, pemain, dll).
 
 ## Cara Pakai
 

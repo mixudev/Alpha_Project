@@ -19,11 +19,12 @@ local playerRemovingConn = nil
 local UPDATE_INTERVAL = 0.12
 local lastUpdate = 0
 
-local CIRCLE_SIZE = 44
+local CIRCLE_SIZE = 38
 local LINE_THICKNESS = 2
-local MARGIN = 60
-local COLOR_LINE = Color3.fromRGB(0, 200, 180)
-local COLOR_RING = Color3.fromRGB(0, 180, 160)
+local MARGIN = 50
+local ORIGIN_OFFSET = 52
+local COLOR_LINE = Color3.fromRGB(0, 160, 145)
+local COLOR_RING = Color3.fromRGB(0, 140, 125)
 
 -- Icon dari folder (GitHub raw). Di Roblox strict mungkin tidak load; fallback pakai bentuk.
 local SCANNER_ICON_URL = "https://raw.githubusercontent.com/mixudev/Alpha_Project/main/icon/favicon.png"
@@ -39,16 +40,20 @@ local function get_friends_in_game()
     return list
 end
 
-local function clamp_to_screen(v2, viewSize)
-    local cx, cy = viewSize.X / 2, viewSize.Y / 2
+local function origin_point(viewSize)
+    return Vector2.new(viewSize.X - ORIGIN_OFFSET, viewSize.Y - ORIGIN_OFFSET)
+end
+
+local function clamp_to_screen(v2, viewSize, origin)
+    local ox, oy = origin.X, origin.Y
     local x, y = v2.X, v2.Y
-    local dx, dy = x - cx, y - cy
-    if dx == 0 and dy == 0 then return Vector2.new(cx, cy) end
-    local maxLen = math.min(cx, cy) - MARGIN
+    local dx, dy = x - ox, y - oy
+    if dx == 0 and dy == 0 then return Vector2.new(ox, oy) end
+    local maxLen = math.min(viewSize.X, viewSize.Y) - MARGIN
     local len = math.sqrt(dx * dx + dy * dy)
     if len <= maxLen then return Vector2.new(x, y) end
     local scale = maxLen / len
-    return Vector2.new(cx + dx * scale, cy + dy * scale)
+    return Vector2.new(ox + dx * scale, oy + dy * scale)
 end
 
 local function create_indicator_for_friend(p, parent)
@@ -106,15 +111,15 @@ local function create_indicator_for_friend(p, parent)
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "Name"
     nameLabel.Parent = container
-    nameLabel.Size = UDim2.new(1, 10, 0, 18)
-    nameLabel.Position = UDim2.new(0.5, 0, 0.5, CIRCLE_SIZE/2 + 4)
+    nameLabel.Size = UDim2.new(1, 8, 0, 14)
+    nameLabel.Position = UDim2.new(0.5, 0, 0.5, CIRCLE_SIZE/2 + 2)
     nameLabel.AnchorPoint = Vector2.new(0.5, 0)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Font = Enum.Font.Gotham
     nameLabel.Text = p.DisplayName or p.Name
-    nameLabel.TextColor3 = Color3.fromRGB(220, 255, 245)
-    nameLabel.TextSize = 11
-    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextColor3 = Color3.fromRGB(200, 240, 230)
+    nameLabel.TextSize = 10
+    nameLabel.TextStrokeTransparency = 0.6
 
     indicators[p] = { container = container, line = line, circle = circle }
     return indicators[p]
@@ -132,7 +137,7 @@ local function update_indicators()
     local cam = Services.Camera
     if not cam then return end
     local viewSize = cam.ViewportSize
-    local center = Vector2.new(viewSize.X / 2, viewSize.Y / 2)
+    local origin = origin_point(viewSize)
     local myChar = Services.LocalPlayer and Services.LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
     if not myHrp then return end
@@ -143,15 +148,15 @@ local function update_indicators()
         seen[p] = true
         local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
         local pos2d = cam:WorldToViewportPoint(hrp and hrp.Position or myHrp.Position)
-        local clamped = clamp_to_screen(Vector2.new(pos2d.X, pos2d.Y), viewSize)
+        local clamped = clamp_to_screen(Vector2.new(pos2d.X, pos2d.Y), viewSize, origin)
         local ind = create_indicator_for_friend(p, screenGui)
         ind.container.Position = UDim2.new(0, clamped.X, 0, clamped.Y)
 
-        local dx = clamped.X - center.X
-        local dy = clamped.Y - center.Y
+        local dx = clamped.X - origin.X
+        local dy = clamped.Y - origin.Y
         local len = math.sqrt(dx * dx + dy * dy)
         local angle = math.deg(math.atan2(-dy, dx)) - 90
-        ind.line.Position = UDim2.new(0, center.X - clamped.X, 0, center.Y - clamped.Y)
+        ind.line.Position = UDim2.new(0, origin.X - clamped.X, 0, origin.Y - clamped.Y)
         ind.line.Size = UDim2.new(0, math.max(0, len - CIRCLE_SIZE/2), 0, LINE_THICKNESS)
         ind.line.Rotation = angle
     end
@@ -193,8 +198,8 @@ local function enable_tracking()
         centerRing.Parent = screenGui
         centerRing.AnchorPoint = Vector2.new(0.5, 0.5)
         centerRing.Size = UDim2.new(0, 36, 0, 36)
-        centerRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-        centerRing.BackgroundColor3 = Color3.fromRGB(20, 35, 32)
+        centerRing.Position = UDim2.new(1, -ORIGIN_OFFSET, 1, -ORIGIN_OFFSET)
+        centerRing.BackgroundColor3 = Color3.fromRGB(22, 38, 36)
         centerRing.BorderSizePixel = 0
         local centerCorner = Instance.new("UICorner")
         centerCorner.CornerRadius = UDim.new(1, 0)
