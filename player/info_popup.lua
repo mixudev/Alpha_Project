@@ -188,11 +188,7 @@ function InfoPopup.show(player)
     create_info_item("Display Name", player.DisplayName or "N/A", order) order = order + 1
     create_info_item("User ID", tostring(player.UserId), order) order = order + 1
     create_info_item("Status", "In Game", order) order = order + 1
-    
-    if Settings.friends.playerMutualFriends[player] == true then
-        create_info_item("Status", "🤝 Friend", order) order = order + 1
-    end
-    
+
     print("📋 Player info opened:", player.Name)
 end
 

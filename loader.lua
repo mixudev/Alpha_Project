@@ -162,7 +162,6 @@ local function load_all()
     print("📦 Loading Config & Core...")
     local Config = require_module("config/settings")
     local CoreServices = require_module("core/services")
-    local CoreConnections = require_module("core/connections")
     
     if not Config or not CoreServices then
         warn("❌ Failed to load Core modules")
@@ -171,13 +170,12 @@ local function load_all()
     
     print("✅ Config & Core loaded")
     
-    -- 2. Utils (Tween, HTTP, Time)
+    -- 2. Utils (Tween, Time)
     print("📦 Loading Utils...")
     local TweenUtil = require_module("utils/tween")
-    local HttpUtil = require_module("utils/http")
     local TimeUtil = require_module("utils/time")
     
-    if not TweenUtil or not HttpUtil then
+    if not TweenUtil then
         warn("❌ Failed to load Utils")
         return false
     end
@@ -216,12 +214,7 @@ local function load_all()
     
     print("✅ Player System loaded")
     
-    -- 6. Social System (DISABLED)
-    -- Mutual/friends features were causing executor errors and are optional.
-    -- If you want to re-enable later, we can add proper gating + UI controls.
-    local Friends = nil
-    
-    -- 7. Features
+    -- 6. Features (NO social/connection features)
     print("📦 Loading Features...")
     local FlyFeature = require_module("features/fly")
     local NoClipFeature = require_module("features/noclip")
@@ -241,29 +234,28 @@ local function load_all()
     end
 
     -- ============================================
-    -- BUILD PAGES + SIDEBAR (so features appear)
+    -- BUILD PAGES + SIDEBAR
     -- ============================================
     local playersPage = UIPages.create("Players", UIStructure.content)
     local settingsPage = UIPages.create("Settings", UIStructure.content)
 
-    -- Sidebar nav
-    local function show_players()
+    local function render_players()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, playersPage)
-        -- render player list into the scrolling frame
         pcall(function() PlayerList.create(playersPage) end)
     end
-    local function show_settings()
+
+    local function render_settings()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, settingsPage)
     end
 
-    UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, show_players)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, show_settings)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, render_players)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
 
-    -- Default page
-    show_players()
+    -- Default
+    render_players()
     UISidebar.set_active(UIStructure.sidebar, "PlayersNavButton")
 
-    -- Settings UI content (toggles)
+    -- Settings UI content (only local features)
     do
         local Section = UIComponents.Section
         local Toggle = UIComponents.Toggle
@@ -282,6 +274,24 @@ local function load_all()
             pcall(function() NoClipFeature.toggle(enabled) end)
         end)
     end
+
+    -- Auto refresh player list (when Players page visible)
+    pcall(function()
+        if Config.connections and CoreServices and CoreServices.RunService then
+            if Config.connections.playerRefresh then
+                pcall(function() Config.connections.playerRefresh:Disconnect() end)
+                Config.connections.playerRefresh = nil
+            end
+            Config.connections.playerRefresh = CoreServices.RunService.Heartbeat:Connect(function()
+                if Config.ui.currentPage == playersPage and playersPage.Visible then
+                    if not playersPage:GetAttribute("LastUpdate") or (tick() - playersPage:GetAttribute("LastUpdate")) > 2 then
+                        playersPage:SetAttribute("LastUpdate", tick())
+                        PlayerList.create(playersPage)
+                    end
+                end
+            end)
+        end
+    end)
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")

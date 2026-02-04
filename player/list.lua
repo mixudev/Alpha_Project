@@ -7,6 +7,7 @@ local Alpha = rawget(_G, "Alpha")
 local Services = (Alpha and Alpha.require) and Alpha.require("core/services") or require(script.Parent.Parent:FindFirstChild("core/services"))
 local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") or require(script.Parent.Parent:FindFirstChild("config/settings"))
 local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") or require(script.Parent:FindFirstChild("spectate"))
+local InfoPopup = (Alpha and Alpha.require) and Alpha.require("player/info_popup") or require(script.Parent:FindFirstChild("info_popup"))
 local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent.Parent:FindFirstChild("ui/components/button"))
 local TimeUtil = (Alpha and Alpha.require) and Alpha.require("utils/time") or require(script.Parent.Parent:FindFirstChild("utils/time"))
 
@@ -75,17 +76,6 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder)
     corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = playerFrame
     
-    -- Check mutual friends border (now boolean: true if player is a friend)
-    local hasMutual = Settings.friends.playerMutualFriends[player] == true
-    
-    if hasMutual and Settings.features.globalFriendEnabled then
-        local mutualStroke = Instance.new("UIStroke")
-        mutualStroke.Color = Settings.colors.accent_friend
-        mutualStroke.Thickness = 2
-        mutualStroke.Transparency = 0
-        mutualStroke.Parent = playerFrame
-    end
-    
     -- Player Name Label
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Parent = playerFrame
@@ -100,8 +90,9 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder)
     
     -- Info Button
     local infoBtn = ButtonComponent.new(playerFrame, "- Info -", UDim2.new(0.37, 5, 0.5, -16), function()
-        -- TODO: Open info popup (akan di-link ke player/info_popup.lua)
-        print("Info button clicked for:", player.Name)
+        pcall(function()
+            InfoPopup.show(player)
+        end)
     end)
     infoBtn.Size = UDim2.new(0.2, -5, 0, 32)
     

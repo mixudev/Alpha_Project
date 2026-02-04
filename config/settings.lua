@@ -13,9 +13,6 @@ Settings.features = {
     infinityJump = false,
     flyEnabled = false,
     noClipEnabled = false,
-    globalFriendEnabled = false,
-    espEnabled = false,
-    godModeEnabled = false,
 }
 
 -- ============================================
@@ -26,16 +23,6 @@ Settings.audio = {
     currentVolume = 1.0,
     volumeLevels = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0},
     currentVolumeIndex = 1,
-}
-
--- ============================================
--- PLAYER & FRIEND DATA
--- ============================================
-
-Settings.friends = {
-    myFriends = {},                     -- Daftar teman kita: {[userId] = {name, displayName}}
-    playerMutualFriends = {},           -- Mutual friends per player: {[player] = {list}}
-    friendDataLoaded = false,
 }
 
 -- ============================================
@@ -52,17 +39,6 @@ Settings.spectate = {
 -- ============================================
 
 Settings.playerJoinTimes = {}
-
--- ============================================
--- ESP DATA
--- ============================================
-
-Settings.esp = {
-    espGuis = {},                       -- {[player] = billboardGui}
-    espCharConns = {},                  -- {[player] = connection}
-    espPlayerAddedConn = nil,
-    espPlayerRemovingConn = nil,
-}
 
 -- ============================================
 -- UI STATE
@@ -91,7 +67,6 @@ Settings.connections = {
     fly = nil,
     noClip = nil,
     infinityJump = nil,
-    godMode = nil,
     playerRefresh = nil,
 }
 
@@ -164,8 +139,8 @@ Settings.sizes = {
 -- ============================================
 
 Settings.api = {
+    -- Keep minimal endpoints (no social/friends features).
     roblox_base = "https://www.roblox.com",
-    friends_api = "https://friends.roblox.com/v1/users/%s/friends",
     headshot_api = "https://www.roblox.com/headshot-thumbnail/image?userId=%s&width=150&height=150&format=png",
     http_enabled = game:GetService("HttpService").HttpEnabled,
 }
