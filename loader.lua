@@ -216,20 +216,16 @@ local function load_all()
     
     print("✅ Player System loaded")
     
-    -- 6. Social System
-    print("📦 Loading Social System...")
-    local Friends = require_module("social/friends")
-    local MutualChecker = require_module("social/mutual_checker")
-    local Notification = require_module("social/notification")
-    
-    print("✅ Social System loaded")
+    -- 6. Social System (DISABLED)
+    -- Mutual/friends features were causing executor errors and are optional.
+    -- If you want to re-enable later, we can add proper gating + UI controls.
+    local Friends = nil
     
     -- 7. Features
     print("📦 Loading Features...")
     local FlyFeature = require_module("features/fly")
     local NoClipFeature = require_module("features/noclip")
     local InfinityJump = require_module("features/infinity_jump")
-    local GlobalFriend = require_module("features/global_friend")
     
     print("✅ Features loaded")
     
@@ -242,6 +238,49 @@ local function load_all()
     if not UIStructure then
         warn("❌ Failed to create main UI")
         return false
+    end
+
+    -- ============================================
+    -- BUILD PAGES + SIDEBAR (so features appear)
+    -- ============================================
+    local playersPage = UIPages.create("Players", UIStructure.content)
+    local settingsPage = UIPages.create("Settings", UIStructure.content)
+
+    -- Sidebar nav
+    local function show_players()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, playersPage)
+        -- render player list into the scrolling frame
+        pcall(function() PlayerList.create(playersPage) end)
+    end
+    local function show_settings()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, settingsPage)
+    end
+
+    UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, show_players)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, show_settings)
+
+    -- Default page
+    show_players()
+    UISidebar.set_active(UIStructure.sidebar, "PlayersNavButton")
+
+    -- Settings UI content (toggles)
+    do
+        local Section = UIComponents.Section
+        local Toggle = UIComponents.Toggle
+
+        Section.new(settingsPage, "⚡ Movement", 1)
+
+        Toggle.new(settingsPage, "Infinity Jump", 2, function(enabled)
+            pcall(function() InfinityJump.toggle(enabled) end)
+        end)
+
+        Toggle.new(settingsPage, "Fly", 3, function(enabled)
+            pcall(function() FlyFeature.toggle(enabled) end)
+        end)
+
+        Toggle.new(settingsPage, "No Clip", 4, function(enabled)
+            pcall(function() NoClipFeature.toggle(enabled) end)
+        end)
     end
     
     print("✅ UI Created")
@@ -258,9 +297,9 @@ local function load_all()
         CoreServices = CoreServices,
         UIMain = UIMain,
         PlayerList = PlayerList,
-        Friends = Friends,
         FlyFeature = FlyFeature,
         NoClipFeature = NoClipFeature,
+        InfinityJump = InfinityJump,
     }
 end
 
