@@ -16,6 +16,7 @@ Settings.features = {
     espEnabled = false,
     infinityZoomEnabled = false,
     droneEnabled = false,
+    antiAfkEnabled = false,
 }
 
 -- ============================================

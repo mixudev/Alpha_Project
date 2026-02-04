@@ -13,8 +13,12 @@ local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or re
 
 local PlayerList = {}
 
--- Warna border untuk koneksi (hijau toska)
+-- Warna tema koneksi (hijau toska) - border, bg, dan text selaras
 local BORDER_TOSKA = Color3.fromRGB(0, 200, 180)
+local BG_TOSKA = Color3.fromRGB(28, 48, 46)
+local TEXT_TOSKA = Color3.fromRGB(180, 255, 240)
+local BTN_TOSKA = Color3.fromRGB(35, 65, 60)
+local BTN_TOSKA_HOVER = Color3.fromRGB(45, 85, 78)
 
 -- ============================================
 -- CREATE PLAYER LIST
@@ -96,7 +100,7 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
     local playerFrame = Instance.new("Frame")
     playerFrame.Name = player.Name
     playerFrame.Parent = scrollContent
-    playerFrame.BackgroundColor3 = Settings.colors.bg_light
+    playerFrame.BackgroundColor3 = isFriend and BG_TOSKA or Settings.colors.bg_light
     playerFrame.Size = UDim2.new(1, -20, 0, 42)
     playerFrame.LayoutOrder = layoutOrder
     
@@ -104,7 +108,6 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
     corner.CornerRadius = UDim.new(0, 4)
     corner.Parent = playerFrame
     
-    -- Border hijau toska untuk koneksi (teman di map)
     if isFriend then
         local stroke = Instance.new("UIStroke")
         stroke.Color = BORDER_TOSKA
@@ -113,7 +116,6 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
         stroke.Parent = playerFrame
     end
     
-    -- Player Name Label
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Parent = playerFrame
     nameLabel.BackgroundTransparency = 1
@@ -121,34 +123,49 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
     nameLabel.Size = UDim2.new(0.35, 0, 1, 0)
     nameLabel.Font = Enum.Font.Gotham
     nameLabel.Text = player.DisplayName or player.Name
-    nameLabel.TextColor3 = Settings.colors.text_secondary
+    nameLabel.TextColor3 = isFriend and TEXT_TOSKA or Settings.colors.text_secondary
     nameLabel.TextSize = 13
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Info Button
-    local infoBtn = ButtonComponent.new(playerFrame, "- Info -", UDim2.new(0.37, 5, 0.5, -16), function()
-        pcall(function()
-            InfoPopup.show(player)
-        end)
-    end)
-    infoBtn.Size = UDim2.new(0.2, -5, 0, 32)
+    local function make_btn(text, pos, cb)
+        if isFriend then
+            local btn = Instance.new("TextButton")
+            btn.Parent = playerFrame
+            btn.Position = pos
+            btn.Size = UDim2.new(0.2, -5, 0, 32)
+            btn.BackgroundColor3 = BTN_TOSKA
+            btn.TextColor3 = TEXT_TOSKA
+            btn.Text = text
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = 12
+            btn.BorderSizePixel = 0
+            btn.AutoButtonColor = false
+            local c = Instance.new("UICorner")
+            c.CornerRadius = UDim.new(0, 6)
+            c.Parent = btn
+            btn.MouseEnter:Connect(function() btn.BackgroundColor3 = BTN_TOSKA_HOVER end)
+            btn.MouseLeave:Connect(function() btn.BackgroundColor3 = BTN_TOSKA end)
+            btn.MouseButton1Click:Connect(function() pcall(cb) end)
+            return btn
+        end
+        local btn = ButtonComponent.new(playerFrame, text, pos, cb)
+        btn.Size = UDim2.new(0.2, -5, 0, 32)
+        return btn
+    end
     
-    -- POV Button
-    local povBtn = ButtonComponent.new(playerFrame, "- POV -", UDim2.new(0.58, 5, 0.5, -16), function()
+    make_btn("- Info -", UDim2.new(0.37, 5, 0.5, -16), function()
+        InfoPopup.show(player)
+    end)
+    make_btn("- POV -", UDim2.new(0.58, 5, 0.5, -16), function()
         Spectate.start(player)
     end)
-    povBtn.Size = UDim2.new(0.2, -5, 0, 32)
-    
-    -- TP Button
-    local tpBtn = ButtonComponent.new(playerFrame, "🚀 TP", UDim2.new(0.79, 5, 0.5, -16), function()
+    make_btn("🚀 TP", UDim2.new(0.79, 5, 0.5, -16), function()
         local targetHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         local myHrp = Services.get_humanoid_root_part()
-        
         if targetHrp and myHrp then
             myHrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
         end
     end)
-    tpBtn.Size = UDim2.new(0.2, -5, 0, 32)
 end
 
 -- ============================================
