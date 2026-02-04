@@ -223,6 +223,7 @@ local function load_all()
     local InfinityZoomFeature = require_module("features/infinity_zoom")
     local DroneFeature = require_module("features/drone")
     local AntiAfkFeature = require_module("features/anti_afk")
+    local TrackingFriendsFeature = require_module("features/tracking_friends")
     
     print("✅ Features loaded")
 
@@ -308,12 +309,16 @@ local function load_all()
             pcall(function() InfinityZoomFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🛡️ Lainnya", 7)
-        Toggle.new(settingsPage, "Anti-AFK", 8, function(enabled)
+        Toggle.new(settingsPage, "Tracking Friends (scanner koneksi)", 8, function(enabled)
+            pcall(function() TrackingFriendsFeature.toggle(enabled) end)
+        end)
+
+        Section.new(settingsPage, "🛡️ Lainnya", 9)
+        Toggle.new(settingsPage, "Anti-AFK", 10, function(enabled)
             pcall(function() AntiAfkFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🔊 Audio", 9)
+        Section.new(settingsPage, "🔊 Audio", 11)
         -- Volume Map: satu tombol atur semua suara di map (model, angin, dll)
         do
             local volLevels = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0}
@@ -337,7 +342,7 @@ local function load_all()
             volToggle.BackgroundColor3 = Config.colors.bg_light
             volToggle.BorderSizePixel = 0
             volToggle.Size = UDim2.new(1, -20, 0, Config.sizes.toggle_height)
-            volToggle.LayoutOrder = 10
+            volToggle.LayoutOrder = 12
             volToggle.Font = Enum.Font.Gotham
             volToggle.Text = ""
             volToggle.AutoButtonColor = false

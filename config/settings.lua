@@ -15,6 +15,7 @@ Settings.features = {
     noClipEnabled = false,
     espEnabled = false,
     infinityZoomEnabled = false,
+    trackingFriendsEnabled = false,
     droneEnabled = false,
     antiAfkEnabled = false,
 }
