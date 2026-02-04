@@ -219,6 +219,8 @@ local function load_all()
     local FlyFeature = require_module("features/fly")
     local NoClipFeature = require_module("features/noclip")
     local InfinityJump = require_module("features/infinity_jump")
+    local ESPFeature = require_module("features/esp")
+    local InfinityZoomFeature = require_module("features/infinity_zoom")
     
     print("✅ Features loaded")
     
@@ -273,6 +275,28 @@ local function load_all()
         Toggle.new(settingsPage, "No Clip", 4, function(enabled)
             pcall(function() NoClipFeature.toggle(enabled) end)
         end)
+        
+        Section.new(settingsPage, "👁️ Vision", 5)
+        
+        Toggle.new(settingsPage, "ESP (Lihat Player)", 6, function(enabled)
+            pcall(function() 
+                if enabled then
+                    ESPFeature.enable()
+                else
+                    ESPFeature.disable()
+                end
+            end)
+        end)
+        
+        Toggle.new(settingsPage, "Infinity Zoom (Jauh)", 7, function(enabled)
+            pcall(function()
+                if enabled then
+                    InfinityZoomFeature.enable()
+                else
+                    InfinityZoomFeature.disable()
+                end
+            end)
+        end)
     end
 
     -- Auto refresh player list (when Players page visible)
@@ -310,6 +334,8 @@ local function load_all()
         FlyFeature = FlyFeature,
         NoClipFeature = NoClipFeature,
         InfinityJump = InfinityJump,
+        ESPFeature = ESPFeature,
+        InfinityZoomFeature = InfinityZoomFeature,
     }
 end
 

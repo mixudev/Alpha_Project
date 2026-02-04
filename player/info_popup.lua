@@ -180,6 +180,81 @@ function InfoPopup.show(player)
     end
     
     -- ============================================
+    -- HELPER: CALCULATE ACCOUNT AGE
+    -- ============================================
+    
+    local function calculate_account_age()
+        -- Estimasi berdasarkan UserId (UserId rendah = akun lama)
+        -- Roblox dimulai sekitar 2006, tapi userId mulai dari 1 tahun 2006
+        local userId = player.UserId
+        
+        -- UserId 1-10000 kurang lebih 2006
+        -- UserId meningkat rata-rata 50000+ per tahun
+        local yearsAgo = math.floor(userId / 50000)
+        yearsAgo = math.max(1, yearsAgo)
+        
+        return "~" .. tostring(yearsAgo) .. " tahun lalu"
+    end
+    
+    -- ============================================
+    -- HELPER: GET PLAYER INFO
+    -- ============================================
+    
+    local function get_character_info()
+        local char = player.Character
+        if not char then return "—" end
+        
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            return string.format("❤ %d / %d HP", math.floor(humanoid.Health), math.floor(humanoid.MaxHealth))
+        end
+        return "Respawning"
+    end
+    
+    local function get_position_info()
+        local char = player.Character
+        if not char then return "—" end
+        
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return "—" end
+        
+        local pos = hrp.Position
+        return string.format("(%.1f, %.1f, %.1f)", pos.X, pos.Y, pos.Z)
+    end
+    
+    local function get_distance()
+        local char = player.Character
+        local myChar = Services.Players.LocalPlayer.Character
+        if not char or not myChar then return "—" end
+        
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+        if not hrp or not myHrp then return "—" end
+        
+        local distance = (hrp.Position - myHrp.Position).Magnitude
+        return string.format("%.1f 게임단위", distance)
+    end
+    
+    local function count_player_items()
+        -- Count tools dan items dalam backpack
+        local itemCount = 0
+        local char = player.Character
+        
+        if player:FindFirstChild("Backpack") then
+            itemCount = itemCount + #player.Backpack:GetChildren()
+        end
+        if char then
+            for _, item in pairs(char:GetChildren()) do
+                if item:IsA("Tool") or item:IsA("Accessory") then
+                    itemCount = itemCount + 1
+                end
+            end
+        end
+        
+        return tostring(itemCount)
+    end
+    
+    -- ============================================
     -- POPULATE INFO
     -- ============================================
     
@@ -187,7 +262,16 @@ function InfoPopup.show(player)
     create_info_item("Username", player.Name, order) order = order + 1
     create_info_item("Display Name", player.DisplayName or "N/A", order) order = order + 1
     create_info_item("User ID", tostring(player.UserId), order) order = order + 1
+    create_info_item("Account Age", calculate_account_age(), order) order = order + 1
+    
     create_info_item("Status", "In Game", order) order = order + 1
+    create_info_item("Health", get_character_info(), order) order = order + 1
+    create_info_item("Position", get_position_info(), order) order = order + 1
+    create_info_item("Jarak", get_distance(), order) order = order + 1
+    
+    create_info_item("Team", tostring(player.Team and player.Team.Name or "None"), order) order = order + 1
+    create_info_item("Items", count_player_items(), order) order = order + 1
+    create_info_item("Account Created", calculate_account_age(), order) order = order + 1
 
     print("📋 Player info opened:", player.Name)
 end
