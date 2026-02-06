@@ -190,6 +190,42 @@ function HttpUtil.get_user_created_games(userId, limit)
 end
 
 -- ============================================
+-- ROBLOX API: Get User Presence (Current Game)
+-- ============================================
+
+function HttpUtil.get_user_presence(userId)
+    if not Services.can_http() then return nil end
+    local url = "https://presence.roblox.com/v1/presence/users"
+    local body = HttpUtil.encode({userIds = {userId}})
+    
+    local success, response = pcall(function()
+        -- Try executor POST first
+        local res = executor_request("POST", url, {
+            ["Content-Type"] = "application/json"
+        }, body)
+        if res and type(res) == "table" then
+            return res.Body or res.body or res.ResponseBody or res.responseBody
+        end
+        -- Fallback to HttpService POST
+        if Services.HttpService and Services.HttpService.HttpEnabled then
+            return Services.HttpService:PostAsync(url, body, Enum.HttpContentType.ApplicationJson)
+        end
+        return nil
+    end)
+    
+    if not success or not response then return nil end
+    local okDecode, decoded = pcall(function() return HttpUtil.decode(response) end)
+    if okDecode and type(decoded) == "table" and decoded.userPresences then
+        for _, presence in ipairs(decoded.userPresences) do
+            if presence.userId == userId then
+                return presence
+            end
+        end
+    end
+    return nil
+end
+
+-- ============================================
 -- SAFE PCALL WRAPPER
 -- ============================================
 

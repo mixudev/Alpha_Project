@@ -2,6 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
+    Version: 1.0.1
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -212,6 +213,7 @@ local function load_all()
     local PlayerSpectate = require_module("player/spectate")
     local PlayerInfoPopup = require_module("player/info_popup")
     local Tracker = require_module("player/tracker")
+    local Connections = require_module("player/connections")
     
     print("✅ Player System loaded")
     
@@ -349,6 +351,7 @@ local function load_all()
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
     local trackerPage = UIPages.create("Tracker", UIStructure.content)
+    local connectionsPage = UIPages.create("Connections", UIStructure.content)
     local utilityPage = UIPages.create("Utility", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
@@ -370,6 +373,11 @@ local function load_all()
         pcall(function() Tracker.create(trackerPage) end)
     end
 
+    local function render_connections()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, connectionsPage)
+        pcall(function() Connections.create(connectionsPage) end)
+    end
+
     local function render_utility()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, utilityPage)
     end
@@ -382,8 +390,9 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
     UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 5, render_utility)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 6, render_info)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Connections", "🌐", 5, render_connections)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 6, render_utility)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 7, render_info)
 
     -- Default
     render_players()
@@ -422,17 +431,30 @@ local function load_all()
             pcall(function() TrackingFriendsFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🔔 Notifikasi", 9)
-        Toggle.new(settingsPage, "Notifikasi", 10, function(enabled)
+        Section.new(settingsPage, "🛡️ Lainnya", 9)
+        Toggle.new(settingsPage, "Anti-AFK", 10, function(enabled)
+            pcall(function() AntiAfkFeature.toggle(enabled) end)
+        end)
+    end
+
+    -- Utility page: Night Vision + Chams + Notifikasi + Volume Map
+    do
+        local Section = UIComponents.Section
+        local Toggle = UIComponents.Toggle
+        Section.new(utilityPage, "🔧 Visual Utility", 1)
+        Toggle.new(utilityPage, "Night Vision", 2, function(enabled)
+            pcall(function() NightVisionFeature.toggle(enabled) end)
+        end)
+        Toggle.new(utilityPage, "Chams", 3, function(enabled)
+            pcall(function() ChamsFeature.toggle(enabled) end)
+        end)
+
+        Section.new(utilityPage, "🔔 Notifikasi", 4)
+        Toggle.new(utilityPage, "Notifikasi", 5, function(enabled)
             pcall(function() NotifikasiFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🛡️ Lainnya", 11)
-        Toggle.new(settingsPage, "Anti-AFK", 12, function(enabled)
-            pcall(function() AntiAfkFeature.toggle(enabled) end)
-        end)
-
-        Section.new(settingsPage, "🔊 Audio", 13)
+        Section.new(utilityPage, "🔊 Audio", 6)
         -- Volume Map: satu tombol atur semua suara di map (model, angin, dll)
         do
             local volLevels = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0}
@@ -452,11 +474,11 @@ local function load_all()
             end)
             local volToggle = Instance.new("TextButton")
             volToggle.Name = "VolumeMapToggle"
-            volToggle.Parent = settingsPage
+            volToggle.Parent = utilityPage
             volToggle.BackgroundColor3 = Config.colors.bg_light
             volToggle.BorderSizePixel = 0
             volToggle.Size = UDim2.new(1, -20, 0, Config.sizes.toggle_height)
-            volToggle.LayoutOrder = 14
+            volToggle.LayoutOrder = 7
             volToggle.Font = Enum.Font.Gotham
             volToggle.Text = ""
             volToggle.AutoButtonColor = false
@@ -493,19 +515,6 @@ local function load_all()
             end)
             apply_volume(volLevels[volIndex])
         end
-    end
-
-    -- Utility page: Night Vision + Chams
-    do
-        local Section = UIComponents.Section
-        local Toggle = UIComponents.Toggle
-        Section.new(utilityPage, "🔧 Visual Utility", 1)
-        Toggle.new(utilityPage, "Night Vision", 2, function(enabled)
-            pcall(function() NightVisionFeature.toggle(enabled) end)
-        end)
-        Toggle.new(utilityPage, "Chams", 3, function(enabled)
-            pcall(function() ChamsFeature.toggle(enabled) end)
-        end)
     end
 
     -- Drone page: keterangan + toggle + speed
@@ -767,6 +776,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
+    print("📌 Version: 1.0.1")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     
