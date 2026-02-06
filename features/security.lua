@@ -20,23 +20,59 @@ local function get_full_path(inst)
     return table.concat(path, ".")
 end
 
--- Daftar test yang akan dijalankan (nama + deskripsi)
+-- Daftar test: id, name (singkat untuk tombol), category (untuk pengelompokan menu Test)
 local TEST_LIST = {
-    { id = "remotes", name = "Test RemoteEvent / RemoteFunction", desc = "Mendeteksi semua Remote yang bisa di-fire client dengan data arbitrer." },
-    { id = "bindable", name = "Test Bindable di ReplicatedStorage", desc = "BindableEvent/BindableFunction di ReplicatedStorage bisa di-Invoke dari client." },
-    { id = "loadstring", name = "Test loadstring", desc = "Apakah loadstring tersedia (risiko eksekusi kode dinamis)." },
-    { id = "getfenv", name = "Test getfenv / setfenv", desc = "Fungsi env bisa dipakai untuk hook/read state." },
-    { id = "scripts_rep", name = "Test Script di ReplicatedStorage", desc = "Script/LocalScript di ReplicatedStorage bisa terbaca client." },
-    { id = "modules_rep", name = "Test ModuleScript di ReplicatedStorage", desc = "ModuleScript di ReplicatedStorage bisa di-require client." },
-    { id = "admin", name = "Test Admin", desc = "Mencari Remote yang namanya mengarah ke sistem admin (Admin, Command, dll)." },
-    { id = "ban", name = "Test Ban User", desc = "Mencari Remote yang mungkin untuk ban/kick user." },
-    { id = "announcement", name = "Test Announcement", desc = "Mencari Remote yang mungkin untuk broadcast/announce." },
-    { id = "http", name = "Test HttpEnabled", desc = "Apakah HTTP request dari client diizinkan." },
-    { id = "executor", name = "Info Executor", desc = "Lingkungan executor (syn, getexecutorname, dll)." },
+    { id = "remotes", name = "RemoteEvent / RemoteFunction", short = "Remote", category = "remote" },
+    { id = "bindable", name = "Bindable di ReplicatedStorage", short = "Bindable", category = "remote" },
+    { id = "loadstring", name = "loadstring", short = "loadstring", category = "env" },
+    { id = "getfenv", name = "getfenv / setfenv", short = "getfenv", category = "env" },
+    { id = "http", name = "HttpEnabled", short = "HTTP", category = "env" },
+    { id = "executor", name = "Executor", short = "Executor", category = "env" },
+    { id = "scripts_rep", name = "Script di ReplicatedStorage", short = "Script Rep", category = "scripts" },
+    { id = "modules_rep", name = "ModuleScript di ReplicatedStorage", short = "Module Rep", category = "scripts" },
+    { id = "admin", name = "Remote Admin/Command", short = "Admin", category = "suspicious" },
+    { id = "ban", name = "Remote Ban/Kick", short = "Ban", category = "suspicious" },
+    { id = "announcement", name = "Remote Announce/Broadcast", short = "Announce", category = "suspicious" },
+}
+
+local CATEGORY_LABELS = {
+    remote = "Remote & Bindable",
+    env = "Environment",
+    scripts = "Scripts",
+    suspicious = "Remote Mencurigakan",
 }
 
 function SecurityFeature.get_test_list()
     return TEST_LIST
+end
+
+function SecurityFeature.get_categories()
+    return CATEGORY_LABELS
+end
+
+-- Jalankan satu test saja; return { id, name, status, detail, error }
+function SecurityFeature.run_single_test(test_id)
+    local test_def
+    for _, t in ipairs(TEST_LIST) do
+        if t.id == test_id then test_def = t break end
+    end
+    local name = test_def and test_def.name or test_id
+    local status, detail, err = "OK", "", nil
+    local ok, a, b, c = pcall(run_single, test_id)
+    if ok then
+        status, detail, err = a, b or "", c
+    else
+        status = "ERROR"
+        detail = tostring(a or "Unknown error")
+        err = a
+    end
+    return {
+        id = test_id,
+        name = name,
+        status = status,
+        detail = detail,
+        error = err,
+    }
 end
 
 local function run_single(id)

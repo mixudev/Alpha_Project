@@ -347,6 +347,7 @@ local function load_all()
     local dronePage = UIPages.create("Drone", UIStructure.content)
     local trackerPage = UIPages.create("Tracker", UIStructure.content)
     local securityPage = UIPages.create("Security", UIStructure.content)
+    local testPage = UIPages.create("Test", UIStructure.content)
     local utilityPage = UIPages.create("Utility", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
@@ -535,6 +536,178 @@ local function load_all()
         end)
     end
 
+    local function render_test()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, testPage)
+        pcall(function()
+            for _, c in pairs(testPage:GetChildren()) do
+                if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+            end
+            local Section = UIComponents.Section
+            local categories = SecurityFeature.get_categories()
+            local testList = SecurityFeature.get_test_list()
+            local layoutOrder = 1
+            Section.new(testPage, "🧪 Test Exploitasi", layoutOrder)
+            layoutOrder = layoutOrder + 1
+            local desc = Instance.new("TextLabel")
+            desc.Parent = testPage
+            desc.LayoutOrder = layoutOrder
+            layoutOrder = layoutOrder + 1
+            desc.Size = UDim2.new(1, -20, 0, 36)
+            desc.BackgroundTransparency = 1
+            desc.Font = Enum.Font.Gotham
+            desc.Text = "Test satu per satu untuk cek mana yang terbuka/rawan. Hasil tampil di bawah."
+            desc.TextColor3 = Config.colors.text_tertiary
+            desc.TextSize = 11
+            desc.TextXAlignment = Enum.TextXAlignment.Left
+            desc.TextYAlignment = Enum.TextYAlignment.Top
+            desc.TextWrapped = true
+            local resultBox = Instance.new("ScrollingFrame")
+            resultBox.Name = "TestResultBox"
+            resultBox.Size = UDim2.new(1, -20, 0, 200)
+            resultBox.BackgroundColor3 = Config.colors.bg_light
+            resultBox.BorderSizePixel = 0
+            resultBox.ScrollBarThickness = 6
+            resultBox.CanvasSize = UDim2.new(0, 0, 0, 0)
+            resultBox.Parent = nil
+            local resultListLayout = Instance.new("UIListLayout")
+            resultListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            resultListLayout.Padding = UDim.new(0, 6)
+            local resultPadding = Instance.new("UIPadding")
+            resultPadding.PaddingTop = UDim.new(0, 8)
+            resultPadding.PaddingLeft = UDim.new(0, 8)
+            resultPadding.PaddingRight = UDim.new(0, 8)
+            resultPadding.PaddingBottom = UDim.new(0, 8)
+            local lastTestResultsText = ""
+            local function append_result(r)
+                local status = r.status or "OK"
+                local detail = r.detail or ""
+                if r.error then
+                    detail = detail .. (detail ~= "" and "\n" or "") .. "Error: " .. tostring(r.error)
+                end
+                lastTestResultsText = lastTestResultsText .. "[" .. status .. "] " .. (r.name or r.id) .. "\n" .. detail .. "\n\n"
+                local line = Instance.new("TextLabel")
+                line.Parent = resultBox
+                line.LayoutOrder = #resultBox:GetChildren() - 2
+                line.Size = UDim2.new(1, -16, 0, 0)
+                line.AutomaticSize = Enum.AutomaticSize.Y
+                line.BackgroundTransparency = 1
+                line.Font = Enum.Font.Gotham
+                line.Text = "[" .. status .. "] " .. (r.name or r.id) .. "\n" .. detail
+                line.TextColor3 = (status == "FATAL" or status == "ERROR") and Color3.fromRGB(220, 100, 100)
+                    or (status == "WARNING" and Color3.fromRGB(220, 180, 80))
+                    or (status == "INFO" and Config.colors.text_tertiary)
+                    or Config.colors.text_secondary
+                line.TextSize = 11
+                line.TextXAlignment = Enum.TextXAlignment.Left
+                line.TextYAlignment = Enum.TextYAlignment.Top
+                line.TextWrapped = true
+                task.defer(function()
+                    if resultBox.Parent then
+                        resultBox.CanvasSize = UDim2.new(0, 0, 0, math.max(200, resultListLayout.AbsoluteContentSize.Y + 16))
+                    end
+                end)
+            end
+            local function make_test_button(parent, order, testDef)
+                local btn = Instance.new("TextButton")
+                btn.Parent = parent
+                btn.LayoutOrder = order
+                btn.Size = UDim2.new(1, -20, 0, 36)
+                btn.BackgroundColor3 = Color3.fromRGB(50, 55, 65)
+                btn.BorderSizePixel = 0
+                btn.Font = Enum.Font.GothamBold
+                btn.Text = testDef.short or testDef.name
+                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                btn.TextSize = 12
+                btn.AutoButtonColor = false
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 6)
+                corner.Parent = btn
+                btn.MouseButton1Click:Connect(function()
+                    resultBox.Parent = testPage
+                    local r = SecurityFeature.run_single_test(testDef.id)
+                    append_result(r)
+                end)
+                return btn
+            end
+            local categoryOrder = { "remote", "env", "scripts", "suspicious" }
+            for _, catId in ipairs(categoryOrder) do
+                local catLabel = categories[catId]
+                if catLabel then
+                    Section.new(testPage, catLabel, layoutOrder)
+                    layoutOrder = layoutOrder + 1
+                    for _, t in ipairs(testList) do
+                        if t.category == catId then
+                            make_test_button(testPage, layoutOrder, t)
+                            layoutOrder = layoutOrder + 1
+                        end
+                    end
+                end
+            end
+            Section.new(testPage, "Jalankan Semua", layoutOrder)
+            layoutOrder = layoutOrder + 1
+            local testAllBtn = Instance.new("TextButton")
+            testAllBtn.Parent = testPage
+            testAllBtn.LayoutOrder = layoutOrder
+            layoutOrder = layoutOrder + 1
+            testAllBtn.Size = UDim2.new(1, -20, 0, 42)
+            testAllBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 120)
+            testAllBtn.BorderSizePixel = 0
+            testAllBtn.Font = Enum.Font.GothamBold
+            testAllBtn.Text = "▶ Test Semua"
+            testAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            testAllBtn.TextSize = 14
+            testAllBtn.AutoButtonColor = false
+            local testAllCorner = Instance.new("UICorner")
+            testAllCorner.CornerRadius = UDim.new(0, 6)
+            testAllCorner.Parent = testAllBtn
+            testAllBtn.MouseButton1Click:Connect(function()
+                resultBox.Parent = testPage
+                for _, c in pairs(resultBox:GetChildren()) do
+                    if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+                end
+                lastTestResultsText = ""
+                testAllBtn.Text = "Menjalankan..."
+                task.spawn(function()
+                    local results = SecurityFeature.run_tests()
+                    for _, r in ipairs(results) do
+                        append_result(r)
+                    end
+                    testAllBtn.Text = "▶ Test Semua"
+                    copyTestBtn.Visible = true
+                end)
+            end)
+            resultBox.Parent = testPage
+            resultBox.LayoutOrder = layoutOrder
+            resultListLayout.Parent = resultBox
+            resultPadding.Parent = resultBox
+            layoutOrder = layoutOrder + 1
+            local copyTestBtn = Instance.new("TextButton")
+            copyTestBtn.Parent = testPage
+            copyTestBtn.LayoutOrder = layoutOrder
+            copyTestBtn.Size = UDim2.new(1, -20, 0, 36)
+            copyTestBtn.BackgroundColor3 = Config.colors.bg_light
+            copyTestBtn.BorderSizePixel = 0
+            copyTestBtn.Font = Enum.Font.GothamBold
+            copyTestBtn.Text = "📋 Copy Hasil"
+            copyTestBtn.TextColor3 = Config.colors.text_primary
+            copyTestBtn.TextSize = 12
+            copyTestBtn.Visible = true
+            copyTestBtn.AutoButtonColor = false
+            local copyTestCorner = Instance.new("UICorner")
+            copyTestCorner.CornerRadius = UDim.new(0, 6)
+            copyTestCorner.Parent = copyTestBtn
+            copyTestBtn.MouseButton1Click:Connect(function()
+                if lastTestResultsText and #lastTestResultsText > 0 then
+                    pcall(function() if setclipboard then setclipboard(lastTestResultsText) end end)
+                    pcall(function()
+                        local uis = game:GetService("UserInputService")
+                        if uis and uis.SetClipboard then uis:SetClipboard(lastTestResultsText) end
+                    end)
+                end
+            end)
+        end)
+    end
+
     local function render_utility()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, utilityPage)
     end
@@ -548,8 +721,9 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
     UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
     UISidebar.create_nav_button(UIStructure.sidebar, "Security", "🛡️", 5, render_security)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 6, render_utility)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 7, render_info)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Test", "🧪", 6, render_test)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 7, render_utility)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 8, render_info)
 
     -- Default
     render_players()
