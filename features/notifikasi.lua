@@ -107,11 +107,11 @@ local function show_notification(title, text, icon)
     local frame = Instance.new("Frame")
     frame.Name = "AlphaNotif"
     frame.Parent = gui
-    frame.Size = UDim2.new(0, 320, 0, 0)
-    frame.Position = UDim2.new(0.5, -160, 0, -80)
+    frame.Size = UDim2.new(0, 320, 0, 76)
+    frame.Position = UDim2.new(0.5, -160, 0, -76)
     frame.BackgroundColor3 = Color3.fromRGB(28, 32, 38)
     frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
+    frame.ClipsDescendants = false
     frame.ZIndex = 200
 
     local corner = Instance.new("UICorner")
@@ -125,6 +125,9 @@ local function show_notification(title, text, icon)
     stroke.Parent = frame
 
     local iconStr = (icon and tostring(icon) ~= "" and tostring(icon)) or "◆"
+    local titleStr = (title and tostring(title) ~= "") and tostring(title) or "Notifikasi"
+    local textStr = (text and tostring(text) ~= "") and tostring(text) or "—"
+
     local iconLbl = Instance.new("TextLabel")
     iconLbl.Parent = frame
     iconLbl.Position = UDim2.new(0, 14, 0, 14)
@@ -133,35 +136,41 @@ local function show_notification(title, text, icon)
     iconLbl.Text = iconStr
     iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     iconLbl.TextSize = 24
-    iconLbl.Font = Enum.Font.GothamBold
+    iconLbl.Font = Enum.Font.SourceSansBold
+    iconLbl.ZIndex = 202
+    iconLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    iconLbl.TextStrokeTransparency = 0.6
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Parent = frame
     titleLbl.Position = UDim2.new(0, 58, 0, 10)
     titleLbl.Size = UDim2.new(1, -70, 0, 22)
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = tostring(title or "")
+    titleLbl.Text = titleStr
     titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLbl.TextSize = 14
-    titleLbl.Font = Enum.Font.GothamBold
+    titleLbl.Font = Enum.Font.SourceSansBold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    titleLbl.ZIndex = 202
+    titleLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    titleLbl.TextStrokeTransparency = 0.6
 
     local textLbl = Instance.new("TextLabel")
     textLbl.Parent = frame
     textLbl.Position = UDim2.new(0, 58, 0, 32)
     textLbl.Size = UDim2.new(1, -70, 0, 36)
     textLbl.BackgroundTransparency = 1
-    textLbl.Text = tostring(text or "")
+    textLbl.Text = textStr
     textLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLbl.TextSize = 12
-    textLbl.Font = Enum.Font.Gotham
+    textLbl.Font = Enum.Font.SourceSans
     textLbl.TextXAlignment = Enum.TextXAlignment.Left
     textLbl.TextYAlignment = Enum.TextYAlignment.Top
     textLbl.TextWrapped = true
-
-    frame.Size = UDim2.new(0, 320, 0, 76)
-    frame.Position = UDim2.new(0.5, -160, 0, -76)
+    textLbl.ZIndex = 202
+    textLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLbl.TextStrokeTransparency = 0.6
     local TweenService = Services.TweenService
     TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(0.5, -160, 0, 18)

@@ -375,51 +375,15 @@ local function load_all()
                 if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
             end
             local Section = UIComponents.Section
-            Section.new(securityPage, "🛡️ Security / Exploit Test", 1)
-            local desc = Instance.new("TextLabel")
-            desc.Parent = securityPage
-            desc.LayoutOrder = 2
-            desc.Size = UDim2.new(1, -20, 0, 40)
-            desc.BackgroundTransparency = 1
-            desc.Font = Enum.Font.Gotham
-            desc.Text = "Daftar test yang akan dijalankan:"
-            desc.TextColor3 = Config.colors.text_primary
-            desc.TextSize = 13
-            desc.TextXAlignment = Enum.TextXAlignment.Left
-            desc.TextYAlignment = Enum.TextYAlignment.Top
-            desc.TextWrapped = true
-            local testListContainer = Instance.new("Frame")
-            testListContainer.Parent = securityPage
-            testListContainer.LayoutOrder = 3
-            testListContainer.Size = UDim2.new(1, -20, 0, 0)
-            testListContainer.BackgroundTransparency = 1
-            testListContainer.AutomaticSize = Enum.AutomaticSize.Y
-            local testListLayout = Instance.new("UIListLayout")
-            testListLayout.Parent = testListContainer
-            testListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            testListLayout.Padding = UDim.new(0, 4)
-            local testList = SecurityFeature.get_test_list()
-            for i, t in ipairs(testList) do
-                local row = Instance.new("TextLabel")
-                row.Parent = testListContainer
-                row.LayoutOrder = i
-                row.Size = UDim2.new(1, 0, 0, 20)
-                row.BackgroundTransparency = 1
-                row.Font = Enum.Font.Gotham
-                row.Text = "• " .. (t.name or t.id)
-                row.TextColor3 = Config.colors.text_secondary
-                row.TextSize = 11
-                row.TextXAlignment = Enum.TextXAlignment.Left
-                row.TextWrapped = true
-            end
+            Section.new(securityPage, "🛡️ Security", 1)
             local testBtn = Instance.new("TextButton")
             testBtn.Parent = securityPage
-            testBtn.LayoutOrder = 4
+            testBtn.LayoutOrder = 2
             testBtn.Size = UDim2.new(1, -20, 0, 42)
             testBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
             testBtn.BorderSizePixel = 0
             testBtn.Font = Enum.Font.GothamBold
-            testBtn.Text = "▶ Jalankan Test"
+            testBtn.Text = "Scan"
             testBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             testBtn.TextSize = 14
             testBtn.AutoButtonColor = false
@@ -429,7 +393,7 @@ local function load_all()
             local resultBox = Instance.new("ScrollingFrame")
             resultBox.Name = "SecurityResultBox"
             resultBox.Parent = securityPage
-            resultBox.LayoutOrder = 5
+            resultBox.LayoutOrder = 3
             resultBox.Size = UDim2.new(1, -20, 0, 180)
             resultBox.BackgroundColor3 = Config.colors.bg_light
             resultBox.BorderSizePixel = 0
@@ -450,7 +414,7 @@ local function load_all()
             resultList.Padding = UDim.new(0, 6)
             local copyBtn = Instance.new("TextButton")
             copyBtn.Parent = securityPage
-            copyBtn.LayoutOrder = 6
+            copyBtn.LayoutOrder = 4
             copyBtn.Size = UDim2.new(1, -20, 0, 36)
             copyBtn.BackgroundColor3 = Config.colors.bg_light
             copyBtn.BorderSizePixel = 0
@@ -463,9 +427,31 @@ local function load_all()
             local copyCorner = Instance.new("UICorner")
             copyCorner.CornerRadius = UDim.new(0, 6)
             copyCorner.Parent = copyBtn
+            local summaryContainer = Instance.new("Frame")
+            summaryContainer.Name = "SecuritySummary"
+            summaryContainer.Parent = securityPage
+            summaryContainer.LayoutOrder = 5
+            summaryContainer.Size = UDim2.new(1, -20, 0, 0)
+            summaryContainer.BackgroundTransparency = 1
+            summaryContainer.Visible = false
+            summaryContainer.AutomaticSize = Enum.AutomaticSize.Y
+            local summaryLayout = Instance.new("UIListLayout")
+            summaryLayout.Parent = summaryContainer
+            summaryLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            summaryLayout.Padding = UDim.new(0, 6)
+            local summaryTitle = Instance.new("TextLabel")
+            summaryTitle.Parent = summaryContainer
+            summaryTitle.LayoutOrder = 0
+            summaryTitle.Size = UDim2.new(1, 0, 0, 22)
+            summaryTitle.BackgroundTransparency = 1
+            summaryTitle.Font = Enum.Font.GothamBold
+            summaryTitle.Text = "Ringkasan"
+            summaryTitle.TextColor3 = Config.colors.text_primary
+            summaryTitle.TextSize = 13
+            summaryTitle.TextXAlignment = Enum.TextXAlignment.Left
             local lastResultsText = ""
             testBtn.MouseButton1Click:Connect(function()
-                testBtn.Text = "Menjalankan..."
+                testBtn.Text = "Scanning..."
                 for _, c in pairs(resultBox:GetChildren()) do
                     if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
                 end
@@ -502,7 +488,37 @@ local function load_all()
                         resultBox.CanvasSize = UDim2.new(0, 0, 0, math.max(180, resultList.AbsoluteContentSize.Y + 16))
                     end)
                     copyBtn.Visible = true
-                    testBtn.Text = "▶ Jalankan Test"
+                    testBtn.Text = "Scan"
+                    -- Ringkasan: hapus item lama (kecuali title & layout)
+                    for _, c in pairs(summaryContainer:GetChildren()) do
+                        if c ~= summaryTitle and not c:IsA("UIListLayout") then c:Destroy() end
+                    end
+                    local statusToLabel = {
+                        FATAL = "rawan disusupi",
+                        ERROR = "error saat pengetesan",
+                        WARNING = "perlu diperhatikan",
+                        INFO = "informatif",
+                        OK = "tertutup / aman",
+                    }
+                    for i, r in ipairs(results) do
+                        local status = r.status or "OK"
+                        local label = statusToLabel[status] or "—"
+                        local shortName = (r.name or r.id):gsub("^Test ", ""):gsub(" %/ .*", "")
+                        local line = Instance.new("TextLabel")
+                        line.Parent = summaryContainer
+                        line.LayoutOrder = i
+                        line.Size = UDim2.new(1, 0, 0, 18)
+                        line.BackgroundTransparency = 1
+                        line.Font = Enum.Font.Gotham
+                        line.Text = "• " .. shortName .. ": " .. label
+                        line.TextColor3 = (status == "FATAL" or status == "ERROR") and Color3.fromRGB(220, 100, 100)
+                            or (status == "WARNING" and Color3.fromRGB(220, 180, 80))
+                            or Config.colors.text_secondary
+                        line.TextSize = 11
+                        line.TextXAlignment = Enum.TextXAlignment.Left
+                        line.TextWrapped = true
+                    end
+                    summaryContainer.Visible = true
                 end)
             end)
             copyBtn.MouseButton1Click:Connect(function()
