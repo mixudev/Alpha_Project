@@ -2,7 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
-    Version: 1.0.2
+    Version: 1.0.3
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -213,7 +213,6 @@ local function load_all()
     local PlayerSpectate = require_module("player/spectate")
     local PlayerInfoPopup = require_module("player/info_popup")
     local Tracker = require_module("player/tracker")
-    local Connections = require_module("player/connections")
     
     print("✅ Player System loaded")
     
@@ -230,6 +229,7 @@ local function load_all()
     local NotifikasiFeature = require_module("features/notifikasi")
     local NightVisionFeature = require_module("features/night_vision")
     local ChamsFeature = require_module("features/chams")
+    local SecurityFeature = require_module("features/security")
     
     print("✅ Features loaded")
 
@@ -346,7 +346,7 @@ local function load_all()
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
     local trackerPage = UIPages.create("Tracker", UIStructure.content)
-    local connectionsPage = UIPages.create("Connections", UIStructure.content)
+    local securityPage = UIPages.create("Security", UIStructure.content)
     local utilityPage = UIPages.create("Utility", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
@@ -368,9 +368,123 @@ local function load_all()
         pcall(function() Tracker.create(trackerPage) end)
     end
 
-    local function render_connections()
-        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, connectionsPage)
-        pcall(function() Connections.create(connectionsPage) end)
+    local function render_security()
+        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, securityPage)
+        pcall(function()
+            for _, c in pairs(securityPage:GetChildren()) do
+                if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+            end
+            local Section = UIComponents.Section
+            Section.new(securityPage, "🛡️ Security / Exploit Test", 1)
+            local desc = Instance.new("TextLabel")
+            desc.Parent = securityPage
+            desc.LayoutOrder = 2
+            desc.Size = UDim2.new(1, -20, 0, 50)
+            desc.BackgroundTransparency = 1
+            desc.Font = Enum.Font.Gotham
+            desc.Text = "Jalankan semua test keamanan map (RemoteEvent, Bindable, loadstring, script exposure, dll). Hasil bisa di-copy untuk diperbaiki."
+            desc.TextColor3 = Config.colors.text_tertiary
+            desc.TextSize = 12
+            desc.TextXAlignment = Enum.TextXAlignment.Left
+            desc.TextYAlignment = Enum.TextYAlignment.Top
+            desc.TextWrapped = true
+            local testBtn = Instance.new("TextButton")
+            testBtn.Parent = securityPage
+            testBtn.LayoutOrder = 3
+            testBtn.Size = UDim2.new(1, -20, 0, 42)
+            testBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
+            testBtn.BorderSizePixel = 0
+            testBtn.Font = Enum.Font.GothamBold
+            testBtn.Text = "▶ Jalankan Test"
+            testBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            testBtn.TextSize = 14
+            testBtn.AutoButtonColor = false
+            local testCorner = Instance.new("UICorner")
+            testCorner.CornerRadius = UDim.new(0, 6)
+            testCorner.Parent = testBtn
+            local resultBox = Instance.new("ScrollingFrame")
+            resultBox.Name = "SecurityResultBox"
+            resultBox.Parent = securityPage
+            resultBox.LayoutOrder = 4
+            resultBox.Size = UDim2.new(1, -20, 0, 180)
+            resultBox.BackgroundColor3 = Config.colors.bg_light
+            resultBox.BorderSizePixel = 0
+            resultBox.ScrollBarThickness = 6
+            resultBox.CanvasSize = UDim2.new(0, 0, 0, 0)
+            local resultCorner = Instance.new("UICorner")
+            resultCorner.CornerRadius = UDim.new(0, 6)
+            resultCorner.Parent = resultBox
+            local resultPadding = Instance.new("UIPadding")
+            resultPadding.PaddingTop = UDim.new(0, 8)
+            resultPadding.PaddingLeft = UDim.new(0, 8)
+            resultPadding.PaddingRight = UDim.new(0, 8)
+            resultPadding.PaddingBottom = UDim.new(0, 8)
+            resultPadding.Parent = resultBox
+            local resultList = Instance.new("UIListLayout")
+            resultList.Parent = resultBox
+            resultList.SortOrder = Enum.SortOrder.LayoutOrder
+            resultList.Padding = UDim.new(0, 6)
+            local copyBtn = Instance.new("TextButton")
+            copyBtn.Parent = securityPage
+            copyBtn.LayoutOrder = 5
+            copyBtn.Size = UDim2.new(1, -20, 0, 36)
+            copyBtn.BackgroundColor3 = Config.colors.bg_light
+            copyBtn.BorderSizePixel = 0
+            copyBtn.Font = Enum.Font.GothamBold
+            copyBtn.Text = "📋 Copy Hasil"
+            copyBtn.TextColor3 = Config.colors.text_primary
+            copyBtn.TextSize = 12
+            copyBtn.Visible = false
+            copyBtn.AutoButtonColor = false
+            local copyCorner = Instance.new("UICorner")
+            copyCorner.CornerRadius = UDim.new(0, 6)
+            copyCorner.Parent = copyBtn
+            local lastResultsText = ""
+            testBtn.MouseButton1Click:Connect(function()
+                testBtn.Text = "Menjalankan..."
+                for _, c in pairs(resultBox:GetChildren()) do
+                    if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
+                end
+                task.spawn(function()
+                    local results = SecurityFeature.run_tests()
+                    lastResultsText = ""
+                    local order = 0
+                    for _, r in ipairs(results) do
+                        lastResultsText = lastResultsText .. "[" .. r.severity .. "] " .. r.name .. "\n" .. (r.detail or "") .. "\n\n"
+                        local line = Instance.new("TextLabel")
+                        line.Parent = resultBox
+                        line.LayoutOrder = order
+                        order = order + 1
+                        line.Size = UDim2.new(1, -16, 0, 0)
+                        line.AutomaticSize = Enum.AutomaticSize.Y
+                        line.BackgroundTransparency = 1
+                        line.Font = Enum.Font.Gotham
+                        line.Text = "[" .. r.severity .. "] " .. r.name .. "\n" .. (r.detail or "")
+                        line.TextColor3 = (r.severity == "FATAL" and Color3.fromRGB(220, 100, 100)) or (r.severity == "WARNING" and Color3.fromRGB(220, 180, 80)) or Config.colors.text_secondary
+                        line.TextSize = 11
+                        line.TextXAlignment = Enum.TextXAlignment.Left
+                        line.TextYAlignment = Enum.TextYAlignment.Top
+                        line.TextWrapped = true
+                    end
+                    task.defer(function()
+                        resultBox.CanvasSize = UDim2.new(0, 0, 0, math.max(180, resultList.AbsoluteContentSize.Y + 16))
+                    end)
+                    copyBtn.Visible = true
+                    testBtn.Text = "▶ Jalankan Test"
+                end)
+            end)
+            copyBtn.MouseButton1Click:Connect(function()
+                if lastResultsText and #lastResultsText > 0 then
+                    pcall(function()
+                        if setclipboard then setclipboard(lastResultsText) end
+                    end)
+                    pcall(function()
+                        local uis = game:GetService("UserInputService")
+                        if uis and uis.SetClipboard then uis:SetClipboard(lastResultsText) end
+                    end)
+                end
+            end)
+        end)
     end
 
     local function render_utility()
@@ -385,7 +499,7 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
     UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Connections", "🌐", 5, render_connections)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Security", "🛡️", 5, render_security)
     UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 6, render_utility)
     UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 7, render_info)
 
@@ -782,7 +896,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
-    print("📌 Version: 1.0.2")
+    print("📌 Version: 1.0.3")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     

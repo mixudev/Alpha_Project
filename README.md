@@ -2,7 +2,7 @@
 
 Menu utilitas untuk Roblox (Local / Executor). Ringan dan terintegrasi dalam satu GUI.
 
-**Version: 1.0.2**
+**Version: 1.0.3**
 
 ## Fitur
 
@@ -10,9 +10,9 @@ Menu utilitas untuk Roblox (Local / Executor). Ringan dan terintegrasi dalam sat
 - **Settings** — Infinity Jump, Fly, No Clip, ESP, Infinity Zoom (zoom out unlimited), ESP Koneksi, Anti-AFK.
 - **Drone** — Freecam smooth, Speed, Zoom in/out (scroll), ON/OFF.
 - **Tracker** — List koneksi kita + player dengan koneksi sama (shared). Info popup profesional dengan avatar icons.
-- **Connections** — List semua koneksi, cek map, undang ke map ini, pencarian.
+- **Security** — Test keamanan/exploit map: RemoteEvent, RemoteFunction, Bindable, loadstring, script exposure; hasil bisa di-copy.
 - **Utility** — Night Vision, Chams, Notifikasi (checkpoint & koneksi), Volume Map.
-- **Info** — User di Map & Rejoin di atas, detail server, Copy Place ID & Job ID.
+- **Info** — User di Map bawah Detail Server, detail server, Copy Place ID & Job ID.
 
 ## Cara Pakai
 

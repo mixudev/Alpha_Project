@@ -25,7 +25,7 @@ local CHECKPOINT_CACHE_INTERVAL = 4
 local MOVE_THRESHOLD = 45
 local CHECKPOINT_Y_STEP = 80
 local CHECKPOINT_NEAR_DIST = 14
-local DISPLAY_TIME = 5
+local DISPLAY_TIME = 4.5
 local CHECKPOINT_NAMES = { "Checkpoint", "Finish", "Goal", "End", "FinishLine", "CheckPoint" }
 
 local function get_friends_in_game()
@@ -93,24 +93,6 @@ local function ensure_friends_loaded(callback)
     end)
 end
 
-local function hsv_to_rgb(h, s, v)
-    h = (h % 360) / 60
-    s = math.clamp(s, 0, 1)
-    v = math.clamp(v, 0, 1)
-    local c = v * s
-    local x = c * (1 - math.abs(h % 2 - 1))
-    local m = v - c
-    local r, g, b = 0, 0, 0
-    if h < 1 then r, g, b = c, x, 0
-    elseif h < 2 then r, g, b = x, c, 0
-    elseif h < 3 then r, g, b = 0, c, x
-    elseif h < 4 then r, g, b = 0, x, c
-    elseif h < 5 then r, g, b = x, 0, c
-    else r, g, b = c, 0, x
-    end
-    return Color3.fromRGB(math.floor((r + m) * 255), math.floor((g + m) * 255), math.floor((b + m) * 255))
-end
-
 local function show_notification(title, text, icon)
     local gui = Services.CoreGui:FindFirstChild("AlphaNotifGui")
     if not gui then
@@ -125,50 +107,40 @@ local function show_notification(title, text, icon)
     local frame = Instance.new("Frame")
     frame.Name = "AlphaNotif"
     frame.Parent = gui
-    frame.Size = UDim2.new(0, 320, 0, 82)
-    frame.Position = UDim2.new(0.5, -160, 0, -90)
-    frame.AnchorPoint = Vector2.new(0.5, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 24, 30)
+    frame.Size = UDim2.new(0, 320, 0, 0)
+    frame.Position = UDim2.new(0.5, -160, 0, -80)
+    frame.BackgroundColor3 = Color3.fromRGB(28, 32, 38)
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.ZIndex = 200
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
+    corner.CornerRadius = UDim.new(0, 10)
     corner.Parent = frame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 200, 180)
-    stroke.Thickness = 3
-    stroke.Transparency = 0
+    stroke.Color = Color3.fromRGB(0, 160, 145)
+    stroke.Thickness = 2
+    stroke.Transparency = 0.2
     stroke.Parent = frame
 
-    local iconBg = Instance.new("Frame")
-    iconBg.Parent = frame
-    iconBg.Position = UDim2.new(0, 14, 0, 14)
-    iconBg.Size = UDim2.new(0, 40, 0, 40)
-    iconBg.BackgroundColor3 = Color3.fromRGB(0, 120, 110)
-    iconBg.BorderSizePixel = 0
-    local iconBgCorner = Instance.new("UICorner")
-    iconBgCorner.CornerRadius = UDim.new(0, 8)
-    iconBgCorner.Parent = iconBg
-
     local iconLbl = Instance.new("TextLabel")
-    iconLbl.Parent = iconBg
-    iconLbl.Size = UDim2.new(1, 0, 1, 0)
+    iconLbl.Parent = frame
+    iconLbl.Position = UDim2.new(0, 14, 0, 14)
+    iconLbl.Size = UDim2.new(0, 36, 0, 36)
     iconLbl.BackgroundTransparency = 1
     iconLbl.Text = icon or "◆"
-    iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    iconLbl.TextSize = 20
+    iconLbl.TextColor3 = Color3.fromRGB(0, 220, 200)
+    iconLbl.TextSize = 22
     iconLbl.Font = Enum.Font.GothamBold
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Parent = frame
-    titleLbl.Position = UDim2.new(0, 64, 0, 12)
-    titleLbl.Size = UDim2.new(1, -78, 0, 20)
+    titleLbl.Position = UDim2.new(0, 58, 0, 12)
+    titleLbl.Size = UDim2.new(1, -70, 0, 22)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Text = title
-    titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLbl.TextColor3 = Color3.fromRGB(240, 245, 250)
     titleLbl.TextSize = 14
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -176,37 +148,27 @@ local function show_notification(title, text, icon)
 
     local textLbl = Instance.new("TextLabel")
     textLbl.Parent = frame
-    textLbl.Position = UDim2.new(0, 64, 0, 34)
-    textLbl.Size = UDim2.new(1, -78, 0, 42)
+    textLbl.Position = UDim2.new(0, 58, 0, 34)
+    textLbl.Size = UDim2.new(1, -70, 0, 28)
     textLbl.BackgroundTransparency = 1
     textLbl.Text = text
-    textLbl.TextColor3 = Color3.fromRGB(210, 218, 228)
+    textLbl.TextColor3 = Color3.fromRGB(200, 210, 220)
     textLbl.TextSize = 12
     textLbl.Font = Enum.Font.Gotham
     textLbl.TextXAlignment = Enum.TextXAlignment.Left
-    textLbl.TextYAlignment = Enum.TextYAlignment.Top
     textLbl.TextWrapped = true
 
+    frame.Size = UDim2.new(0, 320, 0, 72)
+    frame.Position = UDim2.new(0.5, -160, 0, -72)
     local TweenService = Services.TweenService
-    TweenService:Create(frame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -160, 0, 20)
+    TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -160, 0, 18)
     }):Play()
 
-    local hue = 160
-    local frameCount = 0
-    local conn = Services.RunService.Heartbeat:Connect(function()
-        if not frame.Parent then conn:Disconnect() return end
-        frameCount = frameCount + 1
-        if frameCount % 2 == 0 then
-            hue = (hue + 2) % 360
-            stroke.Color = hsv_to_rgb(hue, 1, 1)
-        end
-    end)
     task.delay(DISPLAY_TIME, function()
         if frame.Parent then
-            conn:Disconnect()
             TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, -160, 0, -90)
+                Position = UDim2.new(0.5, -160, 0, -80)
             }):Play()
             task.delay(0.35, function()
                 pcall(function() frame:Destroy() end)
