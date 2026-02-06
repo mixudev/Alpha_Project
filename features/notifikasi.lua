@@ -13,7 +13,6 @@ local NotifikasiFeature = {}
 local checkConn = nil
 local playerAddedConn = nil
 local playerRemovingConn = nil
-local localPlayerCharConn = nil
 local CHECK_INTERVAL = 1
 local lastCheck = 0
 local lastPos = {}
@@ -328,18 +327,9 @@ local function enable()
             lastCheckpointY[p] = nil
             lastCheckpointPart[p] = nil
         end)
-        show_notification("Koneksi: Masuk server", "Notifikasi koneksi aktif. Join/left, checkpoint, damage, respawn & pindah area akan ditampilkan di sini.", "🔔")
-        -- Notif saat kita (LocalPlayer) respawn (skip event pertama = saat pertama masuk)
-        if localPlayerCharConn then localPlayerCharConn:Disconnect() localPlayerCharConn = nil end
-        task.delay(1, function()
-            if not Settings.features.notifikasiEnabled then return end
-            localPlayerCharConn = Services.LocalPlayer.CharacterAdded:Connect(function()
-                if not Settings.features.notifikasiEnabled then return end
-                show_notification("Koneksi", "Kamu respawn di map", "🔄")
-            end)
-        end)
-        -- Koneksi / koneksi sama yang sudah di map (sudah join sebelum kita) — setelah notif siap
-        task.delay(DISPLAY_TIME + 0.5, function()
+        show_notification("Koneksi: Masuk server", "Notifikasi koneksi aktif. Join/left, checkpoint, damage & pindah area akan ditampilkan di sini.", "🔔")
+        -- Koneksi di map / koneksi sama di map — tampilkan selalu (dengan retry jika belum ada data)
+        local function show_koneksi_di_map()
             if not Settings.features.notifikasiEnabled then return end
             local friends = get_friends_in_game()
             if #friends > 0 then
@@ -348,14 +338,31 @@ local function enable()
                     table.insert(names, p.DisplayName or p.Name)
                 end
                 show_notification("Koneksi di map", table.concat(names, ", ") .. " sudah di map", "◆")
+            else
+                show_notification("Koneksi di map", "Tidak ada koneksi di map saat ini.", "◆")
             end
             get_shared_connections(function(shared)
-                if not Settings.features.notifikasiEnabled or #shared == 0 then return end
-                local names = {}
-                for _, p in ipairs(shared) do
-                    table.insert(names, p.DisplayName or p.Name)
+                if not Settings.features.notifikasiEnabled then return end
+                if #shared > 0 then
+                    local names = {}
+                    for _, p in ipairs(shared) do
+                        table.insert(names, p.DisplayName or p.Name)
+                    end
+                    show_notification("Koneksi sama di map", table.concat(names, ", ") .. " sudah di map", "◇")
+                else
+                    show_notification("Koneksi sama di map", "Tidak ada koneksi sama di map.", "◇")
                 end
-                show_notification("Koneksi sama di map", table.concat(names, ", ") .. " sudah di map", "◇")
+            end)
+        end
+        task.delay(DISPLAY_TIME + 0.5, function()
+            local hadFriendIds = next(Settings.friendIds or {}) ~= nil
+            show_koneksi_di_map()
+            -- Retry sekali (kalau HTTP lambat, friendIds baru terisi)
+            task.delay(6, function()
+                if not Settings.features.notifikasiEnabled then return end
+                if not hadFriendIds and next(Settings.friendIds or {}) ~= nil then
+                    show_koneksi_di_map()
+                end
             end)
         end)
     end)
@@ -366,7 +373,6 @@ local function disable()
     if checkConn then checkConn:Disconnect() checkConn = nil end
     if playerAddedConn then playerAddedConn:Disconnect() playerAddedConn = nil end
     if playerRemovingConn then playerRemovingConn:Disconnect() playerRemovingConn = nil end
-    if localPlayerCharConn then localPlayerCharConn:Disconnect() localPlayerCharConn = nil end
     lastPos = {}
     lastHealth = {}
 end

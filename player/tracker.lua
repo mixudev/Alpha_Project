@@ -175,8 +175,8 @@ function Tracker.show_connection_info(player)
     local popup = Instance.new("Frame")
     popup.Name = "AlphaTrackerInfo"
     popup.Parent = popupGui
-    popup.Size = UDim2.new(0, 480, 0, 520)
-    popup.Position = UDim2.new(0.5, -240, 0.5, -260)
+    popup.Size = UDim2.new(0, 360, 0, 400)
+    popup.Position = UDim2.new(0.5, -180, 0.5, -200)
     popup.BackgroundColor3 = Settings.colors.bg_medium
     popup.BorderSizePixel = 0
     popup.Active = true
@@ -184,120 +184,85 @@ function Tracker.show_connection_info(player)
     popup.ZIndex = 1
 
     local pcorner = Instance.new("UICorner")
-    pcorner.CornerRadius = UDim.new(0, 12)
+    pcorner.CornerRadius = UDim.new(0, 8)
     pcorner.Parent = popup
 
     local pstroke = Instance.new("UIStroke")
-    pstroke.Color = Color3.fromRGB(100, 100, 120)
-    pstroke.Thickness = 2
-    pstroke.Transparency = 0.2
+    pstroke.Color = Color3.fromRGB(80, 85, 100)
+    pstroke.Thickness = 1
+    pstroke.Transparency = 0.3
     pstroke.Parent = popup
 
-    -- Header dengan avatar (lebih lega)
     local header = Instance.new("Frame")
     header.Parent = popup
-    header.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    header.BackgroundColor3 = Color3.fromRGB(22, 24, 28)
     header.BorderSizePixel = 0
-    header.Size = UDim2.new(1, 0, 0, 110)
+    header.Size = UDim2.new(1, 0, 0, 64)
 
     local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = UDim.new(0, 12)
+    headerCorner.CornerRadius = UDim.new(0, 8)
     headerCorner.Parent = header
 
-    -- Avatar besar di header
     local avatarFrame = Instance.new("ImageLabel")
     avatarFrame.Name = "Avatar"
     avatarFrame.Parent = header
     avatarFrame.BackgroundColor3 = Settings.colors.bg_light
     avatarFrame.BorderSizePixel = 0
-    avatarFrame.Position = UDim2.new(0, 24, 0, 24)
-    avatarFrame.Size = UDim2.new(0, 62, 0, 62)
+    avatarFrame.Position = UDim2.new(0, 10, 0, 10)
+    avatarFrame.Size = UDim2.new(0, 44, 0, 44)
     avatarFrame.Image = HttpUtil.get_headshot_url(player.UserId, 150)
-    
     local avatarCorner = Instance.new("UICorner")
-    avatarCorner.CornerRadius = UDim.new(0, 31)
+    avatarCorner.CornerRadius = UDim.new(0, 22)
     avatarCorner.Parent = avatarFrame
 
-    local avatarStroke = Instance.new("UIStroke")
-    avatarStroke.Color = Color3.fromRGB(100, 150, 200)
-    avatarStroke.Thickness = 2
-    avatarStroke.Transparency = 0.3
-    avatarStroke.Parent = avatarFrame
-
-    -- Nama dan info di header (putih agar jelas)
     local title = Instance.new("TextLabel")
     title.Parent = header
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, -110, 0, 28)
-    title.Position = UDim2.new(0, 98, 0, 22)
+    title.Size = UDim2.new(1, -100, 0, 22)
+    title.Position = UDim2.new(0, 62, 0, 12)
     title.Font = Enum.Font.GothamBold
     title.Text = player.DisplayName or player.Name
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 18
+    title.TextSize = 14
     title.TextXAlignment = Enum.TextXAlignment.Left
+    title.TextTruncate = Enum.TextTruncate.AtEnd
 
     local userIdLabel = Instance.new("TextLabel")
     userIdLabel.Parent = header
     userIdLabel.BackgroundTransparency = 1
-    userIdLabel.Size = UDim2.new(1, -110, 0, 20)
-    userIdLabel.Position = UDim2.new(0, 98, 0, 52)
+    userIdLabel.Size = UDim2.new(1, -100, 0, 16)
+    userIdLabel.Position = UDim2.new(0, 62, 0, 34)
     userIdLabel.Font = Enum.Font.Gotham
-    userIdLabel.Text = "User ID: " .. tostring(player.UserId)
-    userIdLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-    userIdLabel.TextSize = 12
+    userIdLabel.Text = "ID: " .. tostring(player.UserId)
+    userIdLabel.TextColor3 = Color3.fromRGB(160, 165, 180)
+    userIdLabel.TextSize = 11
     userIdLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    local accountAgeLabel = Instance.new("TextLabel")
-    accountAgeLabel.Name = "AccountAgeLabel"
-    accountAgeLabel.Parent = header
-    accountAgeLabel.BackgroundTransparency = 1
-    accountAgeLabel.Size = UDim2.new(1, -110, 0, 18)
-    accountAgeLabel.Position = UDim2.new(0, 98, 0, 74)
-    accountAgeLabel.Font = Enum.Font.Gotham
-    accountAgeLabel.Text = "Memuat info..."
-    accountAgeLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-    accountAgeLabel.TextSize = 11
-    accountAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Load user info
-    task.spawn(function()
-        local userInfo = HttpUtil.get_user_info(player.UserId)
-        if userInfo and userInfo.created then
-            local createdDate = DateTime.fromUnixTimestamp(userInfo.created):ToLocalTime()
-            local now = DateTime.now()
-            local ageDays = math.floor((now.UnixTimestamp - userInfo.created) / 86400)
-            accountAgeLabel.Text = "Akun dibuat: " .. tostring(ageDays) .. " hari lalu"
-        end
-    end)
 
     local closeBtn = Instance.new("TextButton")
     closeBtn.Parent = header
-    closeBtn.Size = UDim2.new(0, 32, 0, 32)
-    closeBtn.Position = UDim2.new(1, -40, 0, 10)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(50, 40, 40)
+    closeBtn.Size = UDim2.new(0, 26, 0, 26)
+    closeBtn.Position = UDim2.new(1, -34, 0, 8)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
     closeBtn.BorderSizePixel = 0
     closeBtn.Text = "×"
-    closeBtn.TextColor3 = Settings.colors.status_off
+    closeBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 22
+    closeBtn.TextSize = 16
     closeBtn.AutoButtonColor = false
-    
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.CornerRadius = UDim.new(0, 4)
     closeCorner.Parent = closeBtn
-    
     closeBtn.MouseButton1Click:Connect(function()
         popupGui:Destroy()
     end)
 
-    -- Content area dengan scroll (padding lebih lega)
     local scrollFrame = Instance.new("ScrollingFrame")
     scrollFrame.Parent = popup
     scrollFrame.BackgroundTransparency = 1
-    scrollFrame.Size = UDim2.new(1, -32, 1, -130)
-    scrollFrame.Position = UDim2.new(0, 16, 0, 118)
-    scrollFrame.ScrollBarThickness = 6
-    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 110)
+    scrollFrame.Size = UDim2.new(1, -24, 1, -80)
+    scrollFrame.Position = UDim2.new(0, 12, 0, 70)
+    scrollFrame.ScrollBarThickness = 4
+    scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(90, 95, 105)
     scrollFrame.BorderSizePixel = 0
 
     local content = Instance.new("Frame")
@@ -309,21 +274,21 @@ function Tracker.show_connection_info(player)
     local contentLayout = Instance.new("UIListLayout")
     contentLayout.Parent = content
     contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.Padding = UDim.new(0, 16)
+    contentLayout.Padding = UDim.new(0, 8)
 
     contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y + 20)
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y + 12)
     end)
 
     local loadingLabel = Instance.new("TextLabel")
     loadingLabel.Parent = content
-    loadingLabel.Size = UDim2.new(1, 0, 0, 40)
+    loadingLabel.Size = UDim2.new(1, 0, 0, 28)
     loadingLabel.LayoutOrder = 0
     loadingLabel.BackgroundTransparency = 1
     loadingLabel.Font = Enum.Font.Gotham
-    loadingLabel.Text = "Memuat koneksi..."
+    loadingLabel.Text = "Memuat..."
     loadingLabel.TextColor3 = Settings.colors.text_tertiary
-    loadingLabel.TextSize = 13
+    loadingLabel.TextSize = 11
 
     task.spawn(function()
         local friends = HttpUtil.get_friends(player.UserId)
@@ -345,17 +310,16 @@ function Tracker.show_connection_info(player)
 
         local layoutOrder = 1
         
-        -- Section: Koneksi di map ini
         local section1Title = Instance.new("TextLabel")
         section1Title.Parent = content
         section1Title.LayoutOrder = layoutOrder
         layoutOrder = layoutOrder + 1
-        section1Title.Size = UDim2.new(1, 0, 0, 28)
+        section1Title.Size = UDim2.new(1, 0, 0, 20)
         section1Title.BackgroundTransparency = 1
         section1Title.Font = Enum.Font.GothamBold
-        section1Title.Text = "🔗 Koneksi di map ini (" .. #inMap .. ")"
-        section1Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        section1Title.TextSize = 14
+        section1Title.Text = "Koneksi di map (" .. #inMap .. ")"
+        section1Title.TextColor3 = Color3.fromRGB(220, 225, 235)
+        section1Title.TextSize = 12
         section1Title.TextXAlignment = Enum.TextXAlignment.Left
 
         if #inMap == 0 then
@@ -363,12 +327,12 @@ function Tracker.show_connection_info(player)
             emptyLabel.Parent = content
             emptyLabel.LayoutOrder = layoutOrder
             layoutOrder = layoutOrder + 1
-            emptyLabel.Size = UDim2.new(1, 0, 0, 36)
+            emptyLabel.Size = UDim2.new(1, 0, 0, 24)
             emptyLabel.BackgroundTransparency = 1
             emptyLabel.Font = Enum.Font.Gotham
-            emptyLabel.Text = "Tidak ada koneksi di map ini."
-            emptyLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-            emptyLabel.TextSize = 13
+            emptyLabel.Text = "Tidak ada."
+            emptyLabel.TextColor3 = Settings.colors.text_tertiary
+            emptyLabel.TextSize = 11
         else
             for _, conn in ipairs(inMap) do
                 local connFrame = Instance.new("Frame")
@@ -376,53 +340,32 @@ function Tracker.show_connection_info(player)
                 connFrame.LayoutOrder = layoutOrder
                 layoutOrder = layoutOrder + 1
                 connFrame.BackgroundColor3 = Settings.colors.bg_light
-                connFrame.Size = UDim2.new(1, 0, 0, 56)
+                connFrame.Size = UDim2.new(1, 0, 0, 40)
                 connFrame.BorderSizePixel = 0
-
                 local connCorner = Instance.new("UICorner")
-                connCorner.CornerRadius = UDim.new(0, 8)
+                connCorner.CornerRadius = UDim.new(0, 4)
                 connCorner.Parent = connFrame
-
-                local connStroke = Instance.new("UIStroke")
-                connStroke.Color = Color3.fromRGB(0, 130, 115)
-                connStroke.Thickness = 1
-                connStroke.Transparency = 0.3
-                connStroke.Parent = connFrame
-
                 local connAvatar = Instance.new("ImageLabel")
                 connAvatar.Parent = connFrame
                 connAvatar.BackgroundColor3 = Settings.colors.bg_medium
                 connAvatar.BorderSizePixel = 0
-                connAvatar.Position = UDim2.new(0, 12, 0.5, -18)
-                connAvatar.Size = UDim2.new(0, 36, 0, 36)
+                connAvatar.Position = UDim2.new(0, 6, 0.5, -14)
+                connAvatar.Size = UDim2.new(0, 28, 0, 28)
                 connAvatar.Image = HttpUtil.get_headshot_url(conn.id, 150)
-                
                 local connAvatarCorner = Instance.new("UICorner")
-                connAvatarCorner.CornerRadius = UDim.new(0, 18)
+                connAvatarCorner.CornerRadius = UDim.new(0, 14)
                 connAvatarCorner.Parent = connAvatar
-
                 local connName = Instance.new("TextLabel")
                 connName.Parent = connFrame
                 connName.BackgroundTransparency = 1
-                connName.Position = UDim2.new(0, 56, 0, 10)
-                connName.Size = UDim2.new(1, -64, 0, 22)
-                connName.Font = Enum.Font.GothamBold
+                connName.Position = UDim2.new(0, 40, 0, 0)
+                connName.Size = UDim2.new(1, -46, 0, 40)
+                connName.Font = Enum.Font.Gotham
                 connName.Text = conn.name
                 connName.TextColor3 = Color3.fromRGB(255, 255, 255)
-                connName.TextSize = 14
+                connName.TextSize = 12
                 connName.TextXAlignment = Enum.TextXAlignment.Left
                 connName.TextTruncate = Enum.TextTruncate.AtEnd
-
-                local connStatus = Instance.new("TextLabel")
-                connStatus.Parent = connFrame
-                connStatus.BackgroundTransparency = 1
-                connStatus.Position = UDim2.new(0, 56, 0, 32)
-                connStatus.Size = UDim2.new(1, -64, 0, 18)
-                connStatus.Font = Enum.Font.Gotham
-                connStatus.Text = "🟢 Sedang bermain"
-                connStatus.TextColor3 = Settings.colors.status_on
-                connStatus.TextSize = 12
-                connStatus.TextXAlignment = Enum.TextXAlignment.Left
             end
         end
     end)
