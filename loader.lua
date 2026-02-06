@@ -379,18 +379,42 @@ local function load_all()
             local desc = Instance.new("TextLabel")
             desc.Parent = securityPage
             desc.LayoutOrder = 2
-            desc.Size = UDim2.new(1, -20, 0, 50)
+            desc.Size = UDim2.new(1, -20, 0, 40)
             desc.BackgroundTransparency = 1
             desc.Font = Enum.Font.Gotham
-            desc.Text = "Jalankan semua test keamanan map (RemoteEvent, Bindable, loadstring, script exposure, dll). Hasil bisa di-copy untuk diperbaiki."
-            desc.TextColor3 = Config.colors.text_tertiary
-            desc.TextSize = 12
+            desc.Text = "Daftar test yang akan dijalankan:"
+            desc.TextColor3 = Config.colors.text_primary
+            desc.TextSize = 13
             desc.TextXAlignment = Enum.TextXAlignment.Left
             desc.TextYAlignment = Enum.TextYAlignment.Top
             desc.TextWrapped = true
+            local testListContainer = Instance.new("Frame")
+            testListContainer.Parent = securityPage
+            testListContainer.LayoutOrder = 3
+            testListContainer.Size = UDim2.new(1, -20, 0, 0)
+            testListContainer.BackgroundTransparency = 1
+            testListContainer.AutomaticSize = Enum.AutomaticSize.Y
+            local testListLayout = Instance.new("UIListLayout")
+            testListLayout.Parent = testListContainer
+            testListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            testListLayout.Padding = UDim.new(0, 4)
+            local testList = SecurityFeature.get_test_list()
+            for i, t in ipairs(testList) do
+                local row = Instance.new("TextLabel")
+                row.Parent = testListContainer
+                row.LayoutOrder = i
+                row.Size = UDim2.new(1, 0, 0, 20)
+                row.BackgroundTransparency = 1
+                row.Font = Enum.Font.Gotham
+                row.Text = "• " .. (t.name or t.id)
+                row.TextColor3 = Config.colors.text_secondary
+                row.TextSize = 11
+                row.TextXAlignment = Enum.TextXAlignment.Left
+                row.TextWrapped = true
+            end
             local testBtn = Instance.new("TextButton")
             testBtn.Parent = securityPage
-            testBtn.LayoutOrder = 3
+            testBtn.LayoutOrder = 4
             testBtn.Size = UDim2.new(1, -20, 0, 42)
             testBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
             testBtn.BorderSizePixel = 0
@@ -405,7 +429,7 @@ local function load_all()
             local resultBox = Instance.new("ScrollingFrame")
             resultBox.Name = "SecurityResultBox"
             resultBox.Parent = securityPage
-            resultBox.LayoutOrder = 4
+            resultBox.LayoutOrder = 5
             resultBox.Size = UDim2.new(1, -20, 0, 180)
             resultBox.BackgroundColor3 = Config.colors.bg_light
             resultBox.BorderSizePixel = 0
@@ -426,7 +450,7 @@ local function load_all()
             resultList.Padding = UDim.new(0, 6)
             local copyBtn = Instance.new("TextButton")
             copyBtn.Parent = securityPage
-            copyBtn.LayoutOrder = 5
+            copyBtn.LayoutOrder = 6
             copyBtn.Size = UDim2.new(1, -20, 0, 36)
             copyBtn.BackgroundColor3 = Config.colors.bg_light
             copyBtn.BorderSizePixel = 0
@@ -450,7 +474,12 @@ local function load_all()
                     lastResultsText = ""
                     local order = 0
                     for _, r in ipairs(results) do
-                        lastResultsText = lastResultsText .. "[" .. r.severity .. "] " .. r.name .. "\n" .. (r.detail or "") .. "\n\n"
+                        local status = r.status or "OK"
+                        local detail = r.detail or ""
+                        if r.error then
+                            detail = detail .. (detail ~= "" and "\n" or "") .. "Error: " .. tostring(r.error)
+                        end
+                        lastResultsText = lastResultsText .. "[" .. status .. "] " .. (r.name or r.id) .. "\n" .. detail .. "\n\n"
                         local line = Instance.new("TextLabel")
                         line.Parent = resultBox
                         line.LayoutOrder = order
@@ -459,8 +488,11 @@ local function load_all()
                         line.AutomaticSize = Enum.AutomaticSize.Y
                         line.BackgroundTransparency = 1
                         line.Font = Enum.Font.Gotham
-                        line.Text = "[" .. r.severity .. "] " .. r.name .. "\n" .. (r.detail or "")
-                        line.TextColor3 = (r.severity == "FATAL" and Color3.fromRGB(220, 100, 100)) or (r.severity == "WARNING" and Color3.fromRGB(220, 180, 80)) or Config.colors.text_secondary
+                        line.Text = "[" .. status .. "] " .. (r.name or r.id) .. "\n" .. detail
+                        line.TextColor3 = (status == "FATAL" or status == "ERROR") and Color3.fromRGB(220, 100, 100)
+                            or (status == "WARNING" and Color3.fromRGB(220, 180, 80))
+                            or (status == "INFO" and Config.colors.text_tertiary)
+                            or Config.colors.text_secondary
                         line.TextSize = 11
                         line.TextXAlignment = Enum.TextXAlignment.Left
                         line.TextYAlignment = Enum.TextYAlignment.Top

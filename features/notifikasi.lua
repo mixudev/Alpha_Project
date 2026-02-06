@@ -124,23 +124,24 @@ local function show_notification(title, text, icon)
     stroke.Transparency = 0.2
     stroke.Parent = frame
 
+    local iconStr = (icon and tostring(icon) ~= "" and tostring(icon)) or "◆"
     local iconLbl = Instance.new("TextLabel")
     iconLbl.Parent = frame
     iconLbl.Position = UDim2.new(0, 14, 0, 14)
     iconLbl.Size = UDim2.new(0, 36, 0, 36)
     iconLbl.BackgroundTransparency = 1
-    iconLbl.Text = icon or "◆"
-    iconLbl.TextColor3 = Color3.fromRGB(0, 220, 200)
-    iconLbl.TextSize = 22
+    iconLbl.Text = iconStr
+    iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    iconLbl.TextSize = 24
     iconLbl.Font = Enum.Font.GothamBold
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Parent = frame
-    titleLbl.Position = UDim2.new(0, 58, 0, 12)
+    titleLbl.Position = UDim2.new(0, 58, 0, 10)
     titleLbl.Size = UDim2.new(1, -70, 0, 22)
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = title
-    titleLbl.TextColor3 = Color3.fromRGB(240, 245, 250)
+    titleLbl.Text = tostring(title or "")
+    titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLbl.TextSize = 14
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -148,18 +149,19 @@ local function show_notification(title, text, icon)
 
     local textLbl = Instance.new("TextLabel")
     textLbl.Parent = frame
-    textLbl.Position = UDim2.new(0, 58, 0, 34)
-    textLbl.Size = UDim2.new(1, -70, 0, 28)
+    textLbl.Position = UDim2.new(0, 58, 0, 32)
+    textLbl.Size = UDim2.new(1, -70, 0, 36)
     textLbl.BackgroundTransparency = 1
-    textLbl.Text = text
-    textLbl.TextColor3 = Color3.fromRGB(200, 210, 220)
+    textLbl.Text = tostring(text or "")
+    textLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLbl.TextSize = 12
     textLbl.Font = Enum.Font.Gotham
     textLbl.TextXAlignment = Enum.TextXAlignment.Left
+    textLbl.TextYAlignment = Enum.TextYAlignment.Top
     textLbl.TextWrapped = true
 
-    frame.Size = UDim2.new(0, 320, 0, 72)
-    frame.Position = UDim2.new(0.5, -160, 0, -72)
+    frame.Size = UDim2.new(0, 320, 0, 76)
+    frame.Position = UDim2.new(0.5, -160, 0, -76)
     local TweenService = Services.TweenService
     TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(0.5, -160, 0, 18)
@@ -168,7 +170,7 @@ local function show_notification(title, text, icon)
     task.delay(DISPLAY_TIME, function()
         if frame.Parent then
             TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, -160, 0, -80)
+                Position = UDim2.new(0.5, -160, 0, -76)
             }):Play()
             task.delay(0.35, function()
                 pcall(function() frame:Destroy() end)

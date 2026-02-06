@@ -1,8 +1,7 @@
 --[[
     Alpha Project - Security / Exploit Test
-    Test keamanan map: RemoteEvent/RemoteFunction, Bindable, loadstring, env, dll.
-    Berdasarkan prinsip Roblox: Never trust the client. Admin system sering pakai
-    RemoteEvent/RemoteFunction; exploit bisa fire dengan argumen arbitrer.
+    Daftar test keamanan map: RemoteEvent, Admin, Ban, Announcement, Bindable, loadstring, dll.
+    Setiap test dijalankan dan hasil/error ditampilkan; hasil bisa di-copy.
 ]]
 
 local Alpha = rawget(_G, "Alpha")
@@ -21,128 +20,196 @@ local function get_full_path(inst)
     return table.concat(path, ".")
 end
 
-local function run_tests()
-    local results = {}
-    local function add(severity, name, detail)
-        table.insert(results, { severity = severity, name = name, detail = detail or "" })
-    end
+-- Daftar test yang akan dijalankan (nama + deskripsi)
+local TEST_LIST = {
+    { id = "remotes", name = "Test RemoteEvent / RemoteFunction", desc = "Mendeteksi semua Remote yang bisa di-fire client dengan data arbitrer." },
+    { id = "bindable", name = "Test Bindable di ReplicatedStorage", desc = "BindableEvent/BindableFunction di ReplicatedStorage bisa di-Invoke dari client." },
+    { id = "loadstring", name = "Test loadstring", desc = "Apakah loadstring tersedia (risiko eksekusi kode dinamis)." },
+    { id = "getfenv", name = "Test getfenv / setfenv", desc = "Fungsi env bisa dipakai untuk hook/read state." },
+    { id = "scripts_rep", name = "Test Script di ReplicatedStorage", desc = "Script/LocalScript di ReplicatedStorage bisa terbaca client." },
+    { id = "modules_rep", name = "Test ModuleScript di ReplicatedStorage", desc = "ModuleScript di ReplicatedStorage bisa di-require client." },
+    { id = "admin", name = "Test Admin", desc = "Mencari Remote yang namanya mengarah ke sistem admin (Admin, Command, dll)." },
+    { id = "ban", name = "Test Ban User", desc = "Mencari Remote yang mungkin untuk ban/kick user." },
+    { id = "announcement", name = "Test Announcement", desc = "Mencari Remote yang mungkin untuk broadcast/announce." },
+    { id = "http", name = "Test HttpEnabled", desc = "Apakah HTTP request dari client diizinkan." },
+    { id = "executor", name = "Info Executor", desc = "Lingkungan executor (syn, getexecutorname, dll)." },
+}
 
-    -- 1. RemoteEvent & RemoteFunction (client bisa FireServer/InvokeServer dengan data arbitrer)
-    do
-        local count = 0
+function SecurityFeature.get_test_list()
+    return TEST_LIST
+end
+
+local function run_single(id)
+    if id == "remotes" then
         local list = {}
         for _, obj in pairs(game:GetDescendants()) do
             if obj:IsA("RemoteEvent") then
-                count = count + 1
                 table.insert(list, get_full_path(obj) .. " [RemoteEvent]")
             elseif obj:IsA("RemoteFunction") then
-                count = count + 1
                 table.insert(list, get_full_path(obj) .. " [RemoteFunction]")
             end
         end
-        if count > 0 then
-            add("FATAL", "RemoteEvent/RemoteFunction terpapar", count .. " item. Client bisa fire/invoke dengan argumen arbitrer.\n" .. table.concat(list, "\n"))
-        else
-            add("INFO", "RemoteEvent/RemoteFunction", "Tidak ditemukan (aman dari eksposur client).")
+        if #list > 0 then
+            return "FATAL", #list .. " item. Client bisa fire/invoke dengan argumen arbitrer.\n" .. table.concat(list, "\n"), nil
         end
+        return "OK", "Tidak ditemukan.", nil
     end
 
-    -- 2. BindableEvent / BindableFunction (bisa dipanggil dari client jika di ReplicatedStorage)
-    do
-        local bindables = {}
+    if id == "bindable" then
+        local list = {}
         for _, obj in pairs(game:GetDescendants()) do
             if (obj:IsA("BindableEvent") or obj:IsA("BindableFunction")) and obj:IsDescendantOf(game:GetService("ReplicatedStorage")) then
-                table.insert(bindables, get_full_path(obj))
+                table.insert(list, get_full_path(obj))
             end
         end
-        if #bindables > 0 then
-            add("FATAL", "Bindable di ReplicatedStorage", #bindables .. " item. Client bisa Invoke/Fire.\n" .. table.concat(bindables, "\n"))
-        else
-            add("INFO", "Bindable di ReplicatedStorage", "Tidak ada.")
+        if #list > 0 then
+            return "FATAL", #list .. " item.\n" .. table.concat(list, "\n"), nil
         end
+        return "OK", "Tidak ada.", nil
     end
 
-    -- 3. loadstring (sering dimatikan di production; kalau ada = risiko)
-    do
-        local ok = pcall(function() return type(loadstring) == "function" end)
-        if ok and type(loadstring) == "function" then
-            add("FATAL", "loadstring tersedia", "Executor bisa eksekusi kode dinamis. Nonaktifkan di Game Settings.")
-        else
-            add("INFO", "loadstring", "Tidak tersedia (aman).")
+    if id == "loadstring" then
+        if type(loadstring) == "function" then
+            return "FATAL", "Tersedia. Nonaktifkan di Game Settings.", nil
         end
+        return "OK", "Tidak tersedia (aman).", nil
     end
 
-    -- 4. getfenv / setfenv (deprecated tapi exploit bisa pakai)
-    do
-        local hasGet = pcall(function() return type(getfenv) == "function" end)
-        local hasSet = pcall(function() return type(setfenv) == "function" end)
+    if id == "getfenv" then
+        local hasGet = type(getfenv) == "function"
+        local hasSet = type(setfenv) == "function"
         if hasGet or hasSet then
-            add("WARNING", "getfenv/setfenv", "Tersedia. Dapat dipakai untuk hook/read state.")
-        else
-            add("INFO", "getfenv/setfenv", "Tidak tersedia.")
+            return "WARNING", "Tersedia. Dapat dipakai untuk hook/read state.", nil
         end
+        return "OK", "Tidak tersedia.", nil
     end
 
-    -- 5. CoreGui (client bisa baca/ubah UI)
-    do
-        local ok, _ = pcall(function() return game:GetService("CoreGui"):GetChildren() end)
-        if ok then
-            add("WARNING", "Akses CoreGui", "Client bisa enumerate CoreGui. Normal di client.")
-        end
-    end
-
-    -- 6. Script di ReplicatedStorage (kode bisa terbaca)
-    do
-        local scripts = {}
+    if id == "scripts_rep" then
+        local list = {}
         for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
             if obj:IsA("LuaSourceContainer") then
-                table.insert(scripts, get_full_path(obj))
+                table.insert(list, get_full_path(obj))
             end
         end
-        if #scripts > 0 then
-            add("WARNING", "Script/LocalScript di ReplicatedStorage", #scripts .. " item. Source bisa terbaca client.\n" .. table.concat(scripts, "\n"))
-        else
-            add("INFO", "Script di ReplicatedStorage", "Tidak ada.")
+        if #list > 0 then
+            return "WARNING", #list .. " item.\n" .. table.concat(list, "\n"), nil
         end
+        return "OK", "Tidak ada.", nil
     end
 
-    -- 7. ModuleScript di ReplicatedStorage (sama)
-    do
-        local mods = {}
+    if id == "modules_rep" then
+        local list = {}
         for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
             if obj:IsA("ModuleScript") then
-                table.insert(mods, get_full_path(obj))
+                table.insert(list, get_full_path(obj))
             end
         end
-        if #mods > 0 then
-            add("WARNING", "ModuleScript di ReplicatedStorage", #mods .. " item. Require() bisa dipanggil client.\n" .. table.concat(mods, "\n"))
+        if #list > 0 then
+            return "WARNING", #list .. " item.\n" .. table.concat(list, "\n"), nil
         end
+        return "OK", "Tidak ada.", nil
     end
 
-    -- 8. HttpEnabled (untuk request dari client)
-    do
+    if id == "admin" then
+        local keywords = { "Admin", "Command", "Execute", "Script" }
+        local list = {}
+        for _, obj in pairs(game:GetDescendants()) do
+            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+                local path = get_full_path(obj)
+                for _, kw in ipairs(keywords) do
+                    if path:find(kw, 1, true) then
+                        table.insert(list, path)
+                        break
+                    end
+                end
+            end
+        end
+        if #list > 0 then
+            return "WARNING", "Ditemukan " .. #list .. " remote mencurigakan (Admin/Command/Execute/Script):\n" .. table.concat(list, "\n"), nil
+        end
+        return "OK", "Tidak ada yang mencurigakan.", nil
+    end
+
+    if id == "ban" then
+        local keywords = { "Ban", "Kick", "Punish", "Moderate" }
+        local list = {}
+        for _, obj in pairs(game:GetDescendants()) do
+            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+                local path = get_full_path(obj)
+                for _, kw in ipairs(keywords) do
+                    if path:find(kw, 1, true) then
+                        table.insert(list, path)
+                        break
+                    end
+                end
+            end
+        end
+        if #list > 0 then
+            return "WARNING", "Ditemukan " .. #list .. " remote (Ban/Kick/Punish):\n" .. table.concat(list, "\n"), nil
+        end
+        return "OK", "Tidak ada.", nil
+    end
+
+    if id == "announcement" then
+        local keywords = { "Announce", "Broadcast", "Message", "Notify", "Chat" }
+        local list = {}
+        for _, obj in pairs(game:GetDescendants()) do
+            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+                local path = get_full_path(obj)
+                for _, kw in ipairs(keywords) do
+                    if path:find(kw, 1, true) then
+                        table.insert(list, path)
+                        break
+                    end
+                end
+            end
+        end
+        if #list > 0 then
+            return "INFO", #list .. " remote (Announce/Broadcast/Message):\n" .. table.concat(list, "\n"), nil
+        end
+        return "OK", "Tidak ada.", nil
+    end
+
+    if id == "http" then
         local ok = pcall(function() return game:GetService("HttpService").HttpEnabled end)
         if ok and game:GetService("HttpService").HttpEnabled then
-            add("INFO", "HttpEnabled", "Aktif. Client bisa HTTP request.")
-        else
-            add("INFO", "HttpEnabled", "Nonaktif.")
+            return "INFO", "Aktif. Client bisa HTTP request.", nil
         end
+        return "INFO", "Nonaktif.", nil
     end
 
-    -- 9. Synapse / executor check (hanya info)
-    do
-        local info = "Lingkungan: "
-        if type(syn) == "table" then info = info .. "Synapse " end
-        if type(getexecutorname) == "function" then info = info .. "getexecutorname ada " end
-        if type(getrenv) == "function" then info = info .. "getrenv ada " end
-        add("INFO", "Executor", info)
+    if id == "executor" then
+        local t = {}
+        if type(syn) == "table" then table.insert(t, "Synapse") end
+        if type(getexecutorname) == "function" then table.insert(t, "getexecutorname") end
+        if type(getrenv) == "function" then table.insert(t, "getrenv") end
+        return "INFO", #t > 0 and table.concat(t, ", ") or "Standard", nil
     end
 
-    return results
+    return "OK", "—", nil
 end
 
 function SecurityFeature.run_tests()
-    return run_tests()
+    local results = {}
+    for _, test in ipairs(TEST_LIST) do
+        local status, detail, err = "OK", "", nil
+        local ok, a, b, c = pcall(run_single, test.id)
+        if ok then
+            status, detail, err = a, b or "", c
+        else
+            status = "ERROR"
+            detail = tostring(a or "Unknown error")
+            err = a
+        end
+        table.insert(results, {
+            id = test.id,
+            name = test.name,
+            status = status,
+            detail = detail,
+            error = err,
+        })
+    end
+    return results
 end
 
 return SecurityFeature
