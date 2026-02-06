@@ -13,6 +13,7 @@ local NotifikasiFeature = {}
 local checkConn = nil
 local playerAddedConn = nil
 local playerRemovingConn = nil
+local localPlayerCharConn = nil
 local CHECK_INTERVAL = 1
 local lastCheck = 0
 local lastPos = {}
@@ -107,8 +108,8 @@ local function show_notification(title, text, icon)
     local frame = Instance.new("Frame")
     frame.Name = "AlphaNotif"
     frame.Parent = gui
-    frame.Size = UDim2.new(0, 320, 0, 76)
-    frame.Position = UDim2.new(0.5, -160, 0, -76)
+    frame.Size = UDim2.new(0, 340, 0, 88)
+    frame.Position = UDim2.new(0.5, -170, 0, -88)
     frame.BackgroundColor3 = Color3.fromRGB(28, 32, 38)
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = false
@@ -130,25 +131,34 @@ local function show_notification(title, text, icon)
 
     local iconLbl = Instance.new("TextLabel")
     iconLbl.Parent = frame
-    iconLbl.Position = UDim2.new(0, 14, 0, 14)
-    iconLbl.Size = UDim2.new(0, 36, 0, 36)
+    iconLbl.AnchorPoint = Vector2.new(0, 0.5)
+    iconLbl.Position = UDim2.new(0, 14, 0.5, 0)
+    iconLbl.Size = UDim2.new(0, 40, 0, 40)
     iconLbl.BackgroundTransparency = 1
     iconLbl.Text = iconStr
     iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    iconLbl.TextSize = 24
+    iconLbl.TextSize = 26
     iconLbl.Font = Enum.Font.SourceSansBold
     iconLbl.ZIndex = 202
     iconLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     iconLbl.TextStrokeTransparency = 0.6
 
+    -- Konten (judul + isi) ditengah vertikal
+    local contentFrame = Instance.new("Frame")
+    contentFrame.Parent = frame
+    contentFrame.AnchorPoint = Vector2.new(0, 0.5)
+    contentFrame.Position = UDim2.new(0, 62, 0.5, 0)
+    contentFrame.Size = UDim2.new(1, -74, 0, 56)
+    contentFrame.BackgroundTransparency = 1
+
     local titleLbl = Instance.new("TextLabel")
-    titleLbl.Parent = frame
-    titleLbl.Position = UDim2.new(0, 58, 0, 10)
-    titleLbl.Size = UDim2.new(1, -70, 0, 22)
+    titleLbl.Parent = contentFrame
+    titleLbl.Position = UDim2.new(0, 0, 0, 0)
+    titleLbl.Size = UDim2.new(1, 0, 0, 24)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Text = titleStr
     titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLbl.TextSize = 14
+    titleLbl.TextSize = 16
     titleLbl.Font = Enum.Font.SourceSansBold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
@@ -157,13 +167,13 @@ local function show_notification(title, text, icon)
     titleLbl.TextStrokeTransparency = 0.6
 
     local textLbl = Instance.new("TextLabel")
-    textLbl.Parent = frame
-    textLbl.Position = UDim2.new(0, 58, 0, 32)
-    textLbl.Size = UDim2.new(1, -70, 0, 36)
+    textLbl.Parent = contentFrame
+    textLbl.Position = UDim2.new(0, 0, 0, 26)
+    textLbl.Size = UDim2.new(1, 0, 0, 30)
     textLbl.BackgroundTransparency = 1
     textLbl.Text = textStr
     textLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLbl.TextSize = 12
+    textLbl.TextSize = 14
     textLbl.Font = Enum.Font.SourceSans
     textLbl.TextXAlignment = Enum.TextXAlignment.Left
     textLbl.TextYAlignment = Enum.TextYAlignment.Top
@@ -171,15 +181,16 @@ local function show_notification(title, text, icon)
     textLbl.ZIndex = 202
     textLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLbl.TextStrokeTransparency = 0.6
+
     local TweenService = Services.TweenService
     TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -160, 0, 18)
+        Position = UDim2.new(0.5, -170, 0, 18)
     }):Play()
 
     task.delay(DISPLAY_TIME, function()
         if frame.Parent then
             TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, -160, 0, -76)
+                Position = UDim2.new(0.5, -170, 0, -88)
             }):Play()
             task.delay(0.35, function()
                 pcall(function() frame:Destroy() end)
@@ -317,7 +328,16 @@ local function enable()
             lastCheckpointY[p] = nil
             lastCheckpointPart[p] = nil
         end)
-        show_notification("Notifikasi aktif", "Koneksi join/left, checkpoint, damage, respawn & pindah area akan ditampilkan di sini.", "🔔")
+        show_notification("Koneksi: Masuk server", "Notifikasi koneksi aktif. Join/left, checkpoint, damage, respawn & pindah area akan ditampilkan di sini.", "🔔")
+        -- Notif saat kita (LocalPlayer) respawn (skip event pertama = saat pertama masuk)
+        if localPlayerCharConn then localPlayerCharConn:Disconnect() localPlayerCharConn = nil end
+        task.delay(1, function()
+            if not Settings.features.notifikasiEnabled then return end
+            localPlayerCharConn = Services.LocalPlayer.CharacterAdded:Connect(function()
+                if not Settings.features.notifikasiEnabled then return end
+                show_notification("Koneksi", "Kamu respawn di map", "🔄")
+            end)
+        end)
         -- Koneksi / koneksi sama yang sudah di map (sudah join sebelum kita) — setelah notif siap
         task.delay(DISPLAY_TIME + 0.5, function()
             if not Settings.features.notifikasiEnabled then return end
@@ -346,6 +366,7 @@ local function disable()
     if checkConn then checkConn:Disconnect() checkConn = nil end
     if playerAddedConn then playerAddedConn:Disconnect() playerAddedConn = nil end
     if playerRemovingConn then playerRemovingConn:Disconnect() playerRemovingConn = nil end
+    if localPlayerCharConn then localPlayerCharConn:Disconnect() localPlayerCharConn = nil end
     lastPos = {}
     lastHealth = {}
 end
