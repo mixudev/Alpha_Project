@@ -327,7 +327,7 @@ local function enable()
             lastCheckpointY[p] = nil
             lastCheckpointPart[p] = nil
         end)
-        show_notification("Aller Active", "Notifikasi akan ditampilkan disini, join/left, checkpoint, damage & pindah area", "🔔")
+        show_notification("Allert Active", "Notifikasi akan ditampilkan disini, join/left, checkpoint, damage & pindah area", "🔔")
         -- Koneksi di map / koneksi sama di map — tampilkan selalu (dengan retry jika belum ada data)
         local function show_koneksi_di_map()
             if not Settings.features.notifikasiEnabled then return end
