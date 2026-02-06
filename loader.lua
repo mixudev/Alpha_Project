@@ -340,87 +340,6 @@ local function load_all()
     end
 
     -- ============================================
-    -- NOTIF PERTAMA KALI LOAD (pojok kanan bawah)
-    -- ============================================
-    do
-        local CoreGui = CoreServices.CoreGui or game:GetService("CoreGui")
-        local TweenService = game:GetService("TweenService")
-        local loadGui = Instance.new("ScreenGui")
-        loadGui.Name = "AlphaLoadNotif"
-        loadGui.ResetOnSpawn = false
-        loadGui.DisplayOrder = 150
-        loadGui.Parent = CoreGui
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(0, 280, 0, 0)
-        frame.Position = UDim2.new(1, 20, 1, 20)
-        frame.AnchorPoint = Vector2.new(1, 1)
-        frame.BackgroundColor3 = Config.colors.bg_medium
-        frame.BorderSizePixel = 0
-        frame.ClipsDescendants = true
-        frame.Parent = loadGui
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 10)
-        corner.Parent = frame
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(0, 180, 160)
-        stroke.Thickness = 2
-        stroke.Transparency = 0.2
-        stroke.Parent = frame
-        local iconLbl = Instance.new("TextLabel")
-        iconLbl.Parent = frame
-        iconLbl.Position = UDim2.new(0, 14, 0, 14)
-        iconLbl.Size = UDim2.new(0, 32, 0, 32)
-        iconLbl.BackgroundTransparency = 1
-        iconLbl.Text = "⏳"
-        iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        iconLbl.TextSize = 18
-        iconLbl.Font = Enum.Font.GothamBold
-        local titleLbl = Instance.new("TextLabel")
-        titleLbl.Parent = frame
-        titleLbl.Position = UDim2.new(0, 52, 0, 12)
-        titleLbl.Size = UDim2.new(1, -64, 0, 20)
-        titleLbl.BackgroundTransparency = 1
-        titleLbl.Text = "Alpha Project"
-        titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        titleLbl.TextSize = 14
-        titleLbl.Font = Enum.Font.GothamBold
-        titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-        local msgLbl = Instance.new("TextLabel")
-        msgLbl.Name = "Msg"
-        msgLbl.Parent = frame
-        msgLbl.Position = UDim2.new(0, 52, 0, 32)
-        msgLbl.Size = UDim2.new(1, -64, 0, 22)
-        msgLbl.BackgroundTransparency = 1
-        msgLbl.Text = "Sedang dimuat..."
-        msgLbl.TextColor3 = Config.colors.text_secondary
-        msgLbl.TextSize = 12
-        msgLbl.Font = Enum.Font.Gotham
-        msgLbl.TextXAlignment = Enum.TextXAlignment.Left
-        msgLbl.TextWrapped = true
-        frame.Size = UDim2.new(0, 280, 0, 62)
-        frame.Position = UDim2.new(1, 20, 1, 82)
-        TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, 20, 1, 20)
-        }):Play()
-        task.delay(1.2, function()
-            if msgLbl and msgLbl.Parent then
-                msgLbl.Text = "GUI siap dipakai."
-                iconLbl.Text = "✅"
-            end
-        end)
-        task.delay(4.5, function()
-            if frame.Parent then
-                TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                    Position = UDim2.new(1, 20, 1, 82)
-                }):Play()
-                task.delay(0.4, function()
-                    pcall(function() loadGui:Destroy() end)
-                end)
-            end
-        end)
-    end
-
-    -- ============================================
     -- BUILD PAGES + SIDEBAR
     -- ============================================
     local playersPage = UIPages.create("Players", UIStructure.content)
@@ -683,39 +602,11 @@ local function load_all()
         local Players = CoreServices.Players
         local RunService = CoreServices.RunService
         local Lighting = CoreServices.Workspace:FindFirstChildOfClass("Lighting") or game:GetService("Lighting")
-        local TeleportService = game:GetService("TeleportService")
         local placeId = game.PlaceId or 0
-        local jobId = game.JobId or ""
+        local jobId = game.JobId or "N/A"
         local maxPlayers = Players.MaxPlayers
         local numPlayers = #Players:GetPlayers()
 
-        -- Rejoin button (paling atas)
-        local rejoinBtn = Instance.new("TextButton")
-        rejoinBtn.Name = "RejoinBtn"
-        rejoinBtn.Parent = infoPage
-        rejoinBtn.LayoutOrder = 1
-        rejoinBtn.Size = UDim2.new(1, -20, 0, 44)
-        rejoinBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
-        rejoinBtn.BorderSizePixel = 0
-        rejoinBtn.Font = Enum.Font.GothamBold
-        rejoinBtn.Text = "🔄 Rejoin ke Map Ini"
-        rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        rejoinBtn.TextSize = 14
-        rejoinBtn.AutoButtonColor = false
-        local rejoinCorner = Instance.new("UICorner")
-        rejoinCorner.CornerRadius = UDim.new(0, 8)
-        rejoinCorner.Parent = rejoinBtn
-        rejoinBtn.MouseButton1Click:Connect(function()
-            if placeId and placeId > 0 then
-                if jobId and #jobId > 0 then
-                    pcall(function() TeleportService:TeleportToPlaceInstance(placeId, jobId) end)
-                else
-                    pcall(function() TeleportService:Teleport(placeId) end)
-                end
-            end
-        end)
-
-        -- User di Map (paling atas, di bawah Rejoin)
         local function add_info_row(parent, label, value, order)
             local row = Instance.new("Frame")
             row.Parent = parent
@@ -748,7 +639,6 @@ local function load_all()
             val.TextXAlignment = Enum.TextXAlignment.Right
             val.TextTruncate = Enum.TextTruncate.AtEnd
         end
-        add_info_row(infoPage, "User di Map", numPlayers .. " / " .. maxPlayers, 2)
 
         local creatorBox = Instance.new("Frame")
         creatorBox.Name = "CreatorBox"
@@ -756,7 +646,7 @@ local function load_all()
         creatorBox.BackgroundColor3 = Settings.colors.bg_light
         creatorBox.BorderSizePixel = 0
         creatorBox.Size = UDim2.new(1, -20, 0, 90)
-        creatorBox.LayoutOrder = 3
+        creatorBox.LayoutOrder = 1
         local creatorCorner = Instance.new("UICorner")
         creatorCorner.CornerRadius = UDim.new(0, Settings.sizes.corner_radius)
         creatorCorner.Parent = creatorBox
@@ -796,7 +686,8 @@ local function load_all()
         creatorRole.TextSize = 12
         creatorRole.TextXAlignment = Enum.TextXAlignment.Left
 
-        Section.new(infoPage, "Detail Server", 4)
+        Section.new(infoPage, "Detail Server", 2)
+        add_info_row(infoPage, "User di Map", numPlayers .. " / " .. maxPlayers, 3)
         local gameName = game.Name or "—"
         pcall(function()
             if placeId and placeId > 0 then
@@ -808,14 +699,14 @@ local function load_all()
         local creatorId = tostring(game.CreatorId or "—")
         local isStudio = RunService:IsStudio()
         local env = isStudio and "Studio" or "Live"
-        add_info_row(infoPage, "Nama Game", game.Name or "—", 5)
-        add_info_row(infoPage, "Place ID", placeId, 6)
-        add_info_row(infoPage, "Job ID", jobId, 7)
-        add_info_row(infoPage, "Creator Type", creatorType, 8)
-        add_info_row(infoPage, "Creator ID", creatorId, 9)
-        add_info_row(infoPage, "Lingkungan", env, 10)
+        add_info_row(infoPage, "Nama Game", game.Name or "—", 4)
+        add_info_row(infoPage, "Place ID", placeId, 5)
+        add_info_row(infoPage, "Job ID", jobId, 6)
+        add_info_row(infoPage, "Creator Type", creatorType, 7)
+        add_info_row(infoPage, "Creator ID", creatorId, 8)
+        add_info_row(infoPage, "Lingkungan", env, 9)
         if Lighting then
-            add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 11)
+            add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 10)
         end
         -- Tombol Copy (Place ID, Job ID)
         local function copy_to_clipboard(text)
@@ -834,7 +725,7 @@ local function load_all()
         copyRow.Parent = infoPage
         copyRow.BackgroundTransparency = 1
         copyRow.Size = UDim2.new(1, -20, 0, 40)
-        copyRow.LayoutOrder = 12
+        copyRow.LayoutOrder = 11
         local copyPlaceBtn = Instance.new("TextButton")
         copyPlaceBtn.Parent = copyRow
         copyPlaceBtn.Size = UDim2.new(0.48, 0, 0, 36)
@@ -880,7 +771,7 @@ local function load_all()
             end
             Config.connections.playerRefresh = CoreServices.RunService.Heartbeat:Connect(function()
                 if Config.ui.currentPage == playersPage and playersPage.Visible then
-                    if not playersPage:GetAttribute("LastUpdate") or (tick() - playersPage:GetAttribute("LastUpdate")) > 2 then
+                    if not playersPage:GetAttribute("LastUpdate") or (tick() - playersPage:GetAttribute("LastUpdate")) > 4 then
                         playersPage:SetAttribute("LastUpdate", tick())
                         PlayerList.create(playersPage)
                     end

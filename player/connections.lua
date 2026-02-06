@@ -87,8 +87,9 @@ local function create_connection_entry(parent, friendData, layoutOrder)
     avatarCorner.CornerRadius = UDim.new(0, 20)
     avatarCorner.Parent = avatarFrame
 
-    -- Name Label (putih agar jelas)
-    local displayName = friendData.displayName or friendData.name or ("User " .. tostring(friendData.id))
+    -- Nama jelas warna putih (prioritas: displayName > name > User ID)
+    local displayName = tostring(friendData.displayName or friendData.name or friendData.id or "User")
+    if displayName == "" or displayName == "nil" then displayName = "User " .. tostring(friendData.id) end
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Parent = entryFrame
     nameLabel.Name = "NameLabel"
@@ -316,21 +317,33 @@ function Connections.create(scrollContent)
                 return
             end
 
-            -- Normalisasi nama dari API (Roblox bisa pakai name atau displayName)
+            -- Normalisasi nama & cek presence (online paling atas)
             for _, friend in ipairs(friends) do
                 if friend.id then
                     friend.name = friend.name or friend.displayName or ("User " .. tostring(friend.id))
                     friend.displayName = friend.displayName or friend.name
                 end
             end
-
-            -- Tampilkan semua koneksi dulu; status online/offline di-update di tiap entry
-            local order = 0
+            local onlineList = {}
+            local offlineList = {}
             for _, friend in ipairs(friends) do
                 if friend.id then
-                    create_connection_entry(listContainer, friend, order)
-                    order = order + 1
+                    local presence = HttpUtil.get_user_presence(friend.id)
+                    if presence and (presence.userPresenceType == 1 or presence.userPresenceType == 2) then
+                        table.insert(onlineList, friend)
+                    else
+                        table.insert(offlineList, friend)
+                    end
                 end
+            end
+            local order = 0
+            for _, friend in ipairs(onlineList) do
+                create_connection_entry(listContainer, friend, order)
+                order = order + 1
+            end
+            for _, friend in ipairs(offlineList) do
+                create_connection_entry(listContainer, friend, order)
+                order = order + 1
             end
         end)
     end)

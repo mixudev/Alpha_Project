@@ -13,12 +13,15 @@ local NotifikasiFeature = {}
 local checkConn = nil
 local playerAddedConn = nil
 local playerRemovingConn = nil
-local CHECK_INTERVAL = 0.5
+local CHECK_INTERVAL = 1
 local lastCheck = 0
 local lastPos = {}
 local lastHealth = {}
 local lastCheckpointY = {}
 local lastCheckpointPart = {}
+local cachedCheckpointParts = {}
+local lastCheckpointScan = 0
+local CHECKPOINT_CACHE_INTERVAL = 4
 local MOVE_THRESHOLD = 45
 local CHECKPOINT_Y_STEP = 80
 local CHECKPOINT_NEAR_DIST = 14
@@ -90,6 +93,24 @@ local function ensure_friends_loaded(callback)
     end)
 end
 
+local function hsv_to_rgb(h, s, v)
+    h = (h % 360) / 60
+    s = math.clamp(s, 0, 1)
+    v = math.clamp(v, 0, 1)
+    local c = v * s
+    local x = c * (1 - math.abs(h % 2 - 1))
+    local m = v - c
+    local r, g, b = 0, 0, 0
+    if h < 1 then r, g, b = c, x, 0
+    elseif h < 2 then r, g, b = x, c, 0
+    elseif h < 3 then r, g, b = 0, c, x
+    elseif h < 4 then r, g, b = 0, x, c
+    elseif h < 5 then r, g, b = x, 0, c
+    else r, g, b = c, 0, x
+    end
+    return Color3.fromRGB(math.floor((r + m) * 255), math.floor((g + m) * 255), math.floor((b + m) * 255))
+end
+
 local function show_notification(title, text, icon)
     local gui = Services.CoreGui:FindFirstChild("AlphaNotifGui")
     if not gui then
@@ -104,10 +125,10 @@ local function show_notification(title, text, icon)
     local frame = Instance.new("Frame")
     frame.Name = "AlphaNotif"
     frame.Parent = gui
-    frame.Size = UDim2.new(0, 340, 0, 88)
-    frame.Position = UDim2.new(1, 24, 1, 24)
-    frame.AnchorPoint = Vector2.new(1, 1)
-    frame.BackgroundColor3 = Color3.fromRGB(22, 26, 32)
+    frame.Size = UDim2.new(0, 320, 0, 82)
+    frame.Position = UDim2.new(0.5, -160, 0, -90)
+    frame.AnchorPoint = Vector2.new(0.5, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 24, 30)
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
     frame.ZIndex = 200
@@ -117,19 +138,19 @@ local function show_notification(title, text, icon)
     corner.Parent = frame
 
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(0, 180, 165)
-    stroke.Thickness = 2
-    stroke.Transparency = 0.15
+    stroke.Color = Color3.fromRGB(0, 200, 180)
+    stroke.Thickness = 3
+    stroke.Transparency = 0
     stroke.Parent = frame
 
     local iconBg = Instance.new("Frame")
     iconBg.Parent = frame
-    iconBg.Position = UDim2.new(0, 16, 0, 16)
-    iconBg.Size = UDim2.new(0, 44, 0, 44)
-    iconBg.BackgroundColor3 = Color3.fromRGB(0, 140, 125)
+    iconBg.Position = UDim2.new(0, 14, 0, 14)
+    iconBg.Size = UDim2.new(0, 40, 0, 40)
+    iconBg.BackgroundColor3 = Color3.fromRGB(0, 120, 110)
     iconBg.BorderSizePixel = 0
     local iconBgCorner = Instance.new("UICorner")
-    iconBgCorner.CornerRadius = UDim.new(0, 10)
+    iconBgCorner.CornerRadius = UDim.new(0, 8)
     iconBgCorner.Parent = iconBg
 
     local iconLbl = Instance.new("TextLabel")
@@ -138,25 +159,25 @@ local function show_notification(title, text, icon)
     iconLbl.BackgroundTransparency = 1
     iconLbl.Text = icon or "◆"
     iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    iconLbl.TextSize = 22
+    iconLbl.TextSize = 20
     iconLbl.Font = Enum.Font.GothamBold
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Parent = frame
-    titleLbl.Position = UDim2.new(0, 72, 0, 14)
-    titleLbl.Size = UDim2.new(1, -88, 0, 22)
+    titleLbl.Position = UDim2.new(0, 64, 0, 12)
+    titleLbl.Size = UDim2.new(1, -78, 0, 20)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Text = title
     titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLbl.TextSize = 15
+    titleLbl.TextSize = 14
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
 
     local textLbl = Instance.new("TextLabel")
     textLbl.Parent = frame
-    textLbl.Position = UDim2.new(0, 72, 0, 38)
-    textLbl.Size = UDim2.new(1, -88, 0, 42)
+    textLbl.Position = UDim2.new(0, 64, 0, 34)
+    textLbl.Size = UDim2.new(1, -78, 0, 42)
     textLbl.BackgroundTransparency = 1
     textLbl.Text = text
     textLbl.TextColor3 = Color3.fromRGB(210, 218, 228)
@@ -167,15 +188,25 @@ local function show_notification(title, text, icon)
     textLbl.TextWrapped = true
 
     local TweenService = Services.TweenService
-    frame.Position = UDim2.new(1, 24, 1, 120)
-    TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(1, 24, 1, 24)
+    TweenService:Create(frame, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -160, 0, 20)
     }):Play()
 
+    local hue = 160
+    local frameCount = 0
+    local conn = Services.RunService.Heartbeat:Connect(function()
+        if not frame.Parent then conn:Disconnect() return end
+        frameCount = frameCount + 1
+        if frameCount % 2 == 0 then
+            hue = (hue + 2) % 360
+            stroke.Color = hsv_to_rgb(hue, 1, 1)
+        end
+    end)
     task.delay(DISPLAY_TIME, function()
         if frame.Parent then
+            conn:Disconnect()
             TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Position = UDim2.new(1, 24, 1, 120)
+                Position = UDim2.new(0.5, -160, 0, -90)
             }):Play()
             task.delay(0.35, function()
                 pcall(function() frame:Destroy() end)
@@ -222,16 +253,22 @@ local function check_friends()
                 end
             end
             if pos then
-                for _, desc in pairs(Services.Workspace:GetDescendants()) do
-                    if desc:IsA("BasePart") and is_checkpoint_part(desc) then
-                        local dist = (pos - desc.Position).Magnitude
-                        if dist <= CHECKPOINT_NEAR_DIST then
-                            local key = tostring(desc)
-                            if not lastCheckpointPart[p] then lastCheckpointPart[p] = {} end
-                            if not lastCheckpointPart[p][key] then
-                                lastCheckpointPart[p][key] = true
-                                show_notification("Checkpoint", name .. " mencapai: " .. (desc.Name or "Checkpoint"), "🏁")
-                            end
+                if t - lastCheckpointScan > CHECKPOINT_CACHE_INTERVAL then
+                    cachedCheckpointParts = {}
+                    for _, desc in pairs(Services.Workspace:GetDescendants()) do
+                        if desc:IsA("BasePart") and is_checkpoint_part(desc) then
+                            table.insert(cachedCheckpointParts, desc)
+                        end
+                    end
+                    lastCheckpointScan = t
+                end
+                for _, desc in ipairs(cachedCheckpointParts) do
+                    if desc.Parent and (pos - desc.Position).Magnitude <= CHECKPOINT_NEAR_DIST then
+                        local key = tostring(desc)
+                        if not lastCheckpointPart[p] then lastCheckpointPart[p] = {} end
+                        if not lastCheckpointPart[p][key] then
+                            lastCheckpointPart[p][key] = true
+                            show_notification("Checkpoint", name .. " mencapai: " .. (desc.Name or "Checkpoint"), "🏁")
                         end
                     end
                 end
