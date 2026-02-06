@@ -230,8 +230,11 @@ end
 function Connections.create(scrollContent)
     if not scrollContent then return end
 
+    -- Jangan destroy UIListLayout & UIPadding (layout halaman)
     for _, child in pairs(scrollContent:GetChildren()) do
-        child:Destroy()
+        if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+            child:Destroy()
+        end
     end
 
     ensure_friends_loaded(function()
@@ -307,37 +310,27 @@ function Connections.create(scrollContent)
                 empty.Size = UDim2.new(1, 0, 0, 40)
                 empty.BackgroundTransparency = 1
                 empty.Font = Enum.Font.Gotham
-                empty.Text = "Tidak ada koneksi."
+                empty.Text = "Tidak ada koneksi. (Pastikan HTTP aktif untuk load friends)"
                 empty.TextColor3 = Settings.colors.text_tertiary
                 empty.TextSize = 12
                 return
             end
 
-            -- Cek presence dulu, pisah online vs offline
-            local onlineList = {}
-            local offlineList = {}
+            -- Normalisasi nama dari API (Roblox bisa pakai name atau displayName)
             for _, friend in ipairs(friends) do
                 if friend.id then
-                    friend.displayName = friend.displayName or friend.name
                     friend.name = friend.name or friend.displayName or ("User " .. tostring(friend.id))
-                    local presence = HttpUtil.get_user_presence(friend.id)
-                    local isOnline = presence and (presence.userPresenceType == 1 or presence.userPresenceType == 2)
-                    if isOnline then
-                        table.insert(onlineList, friend)
-                    else
-                        table.insert(offlineList, friend)
-                    end
+                    friend.displayName = friend.displayName or friend.name
                 end
             end
 
+            -- Tampilkan semua koneksi dulu; status online/offline di-update di tiap entry
             local order = 0
-            for _, friend in ipairs(onlineList) do
-                create_connection_entry(listContainer, friend, order)
-                order = order + 1
-            end
-            for _, friend in ipairs(offlineList) do
-                create_connection_entry(listContainer, friend, order)
-                order = order + 1
+            for _, friend in ipairs(friends) do
+                if friend.id then
+                    create_connection_entry(listContainer, friend, order)
+                    order = order + 1
+                end
             end
         end)
     end)

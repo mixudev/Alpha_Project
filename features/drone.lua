@@ -12,9 +12,14 @@ local DroneFeature = {}
 local SMOOTH_FACTOR = 0.18
 local ROTATE_SMOOTH = 0.25
 local SENSITIVITY = 0.35
+local FOV_SMOOTH = 0.12
+local FOV_MIN = 5
+local FOV_MAX = 120
+local FOV_STEP = 4
 
 local active = false
 local renderConn = nil
+local mouseWheelConn = nil
 local keysDown = {}
 local rotating = false
 local leftShiftPressed = false
@@ -30,6 +35,9 @@ local humanoid = nil
 local currentSpeed = 1.0
 local currentRotateSpeed = 1.0
 local targetCFrame = nil
+-- Zoom (FOV): kecil = zoom in, besar = zoom out
+local currentFOV = 70
+local targetFOV = 70
 
 -- ============================================
 -- FREEZE / UNFREEZE CHARACTER
@@ -83,13 +91,27 @@ local function enable_drone()
     originalCameraType = cam.CameraType
     originalCameraSubject = cam.CameraSubject
     originalFOV = cam.FieldOfView
+    currentFOV = originalFOV or 70
+    targetFOV = currentFOV
     targetCFrame = cam.CFrame
 
     cam.CameraType = Enum.CameraType.Scriptable
     freezeCharacter()
 
+    -- Mouse wheel: zoom in/out (ubah FOV)
+    mouseWheelConn = Services.UserInputService.InputChanged:Connect(function(input)
+        if not active or input.UserInputType ~= Enum.UserInputType.MouseWheel then return end
+        if input.Position.Z > 0 then
+            targetFOV = math.max(FOV_MIN, targetFOV - FOV_STEP)
+        else
+            targetFOV = math.min(FOV_MAX, targetFOV + FOV_STEP)
+        end
+    end)
+
     renderConn = Services.RunService.RenderStepped:Connect(function()
         if not active or not cam then return end
+        currentFOV = currentFOV + (targetFOV - currentFOV) * FOV_SMOOTH
+        cam.FieldOfView = currentFOV
         local finalSpeed = 0.5 * currentSpeed * (leftShiftPressed and 0.3 or 1)
         local finalRotSpeed = 2.5 * currentRotateSpeed * (rightShiftPressed and 2.5 or 1)
 
@@ -189,6 +211,10 @@ local function disable_drone()
     if renderConn then
         renderConn:Disconnect()
         renderConn = nil
+    end
+    if mouseWheelConn then
+        mouseWheelConn:Disconnect()
+        mouseWheelConn = nil
     end
     if DroneFeature._inputBeganConn then
         DroneFeature._inputBeganConn:Disconnect()
