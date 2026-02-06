@@ -87,16 +87,18 @@ local function create_connection_entry(parent, friendData, layoutOrder)
     avatarCorner.CornerRadius = UDim.new(0, 20)
     avatarCorner.Parent = avatarFrame
 
-    -- Name Label
+    -- Name Label (putih agar jelas)
+    local displayName = friendData.displayName or friendData.name or ("User " .. tostring(friendData.id))
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Parent = entryFrame
+    nameLabel.Name = "NameLabel"
     nameLabel.BackgroundTransparency = 1
     nameLabel.Position = UDim2.new(0, 56, 0, 8)
     nameLabel.Size = UDim2.new(0.5, -60, 0, 20)
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.Text = friendData.name or friendData.displayName or ("User " .. tostring(friendData.id))
-    nameLabel.TextColor3 = Settings.colors.text_primary
-    nameLabel.TextSize = 13
+    nameLabel.Text = displayName
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextSize = 14
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
@@ -184,10 +186,10 @@ local function create_connection_entry(parent, friendData, layoutOrder)
                     mapLabel.Text = "📍 Bermain"
                     mapLabel.TextColor3 = Settings.colors.text_secondary
                 end
-            elseif presence.userPresenceType == 1 then -- Online
+            elseif presence.userPresenceType == 1 then -- Online tapi tidak bermain
                 statusLabel.Text = "🟢 Online"
                 statusLabel.TextColor3 = Settings.colors.status_on
-                mapLabel.Text = "Tidak bermain"
+                mapLabel.Text = "—"
                 mapLabel.TextColor3 = Settings.colors.text_tertiary
             else
                 statusLabel.Text = "⚫ Offline"
@@ -222,33 +224,87 @@ local function section_label(parent, text, layoutOrder)
 end
 
 -- ============================================
--- CREATE CONNECTIONS LIST
+-- CREATE CONNECTIONS LIST (Online atas, Offline bawah + Search)
 -- ============================================
 
 function Connections.create(scrollContent)
     if not scrollContent then return end
 
     for _, child in pairs(scrollContent:GetChildren()) do
-        if child:IsA("Frame") or child:IsA("TextLabel") then
-            child:Destroy()
-        end
+        child:Destroy()
     end
 
     ensure_friends_loaded(function()
         local layoutOrder = 0
 
         layoutOrder = layoutOrder + 1
-        section_label(scrollContent, "Koneksi Online", layoutOrder)
+        section_label(scrollContent, "Koneksi", layoutOrder)
         layoutOrder = layoutOrder + 1
+
+        -- Search box
+        local searchFrame = Instance.new("Frame")
+        searchFrame.Name = "SearchFrame"
+        searchFrame.Parent = scrollContent
+        searchFrame.LayoutOrder = layoutOrder
+        layoutOrder = layoutOrder + 1
+        searchFrame.BackgroundColor3 = Settings.colors.bg_light
+        searchFrame.Size = UDim2.new(1, -20, 0, 40)
+        searchFrame.BorderSizePixel = 0
+
+        local searchCorner = Instance.new("UICorner")
+        searchCorner.CornerRadius = UDim.new(0, 6)
+        searchCorner.Parent = searchFrame
+
+        local searchBox = Instance.new("TextBox")
+        searchBox.Name = "SearchBox"
+        searchBox.Parent = searchFrame
+        searchBox.BackgroundTransparency = 1
+        searchBox.Position = UDim2.new(0, 12, 0, 0)
+        searchBox.Size = UDim2.new(1, -24, 1, 0)
+        searchBox.Font = Enum.Font.Gotham
+        searchBox.PlaceholderText = "Cari nama..."
+        searchBox.PlaceholderColor3 = Settings.colors.text_tertiary
+        searchBox.Text = ""
+        searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        searchBox.TextSize = 13
+        searchBox.TextXAlignment = Enum.TextXAlignment.Left
+        searchBox.ClearTextOnFocus = false
+
+        local listContainer = Instance.new("Frame")
+        listContainer.Name = "ConnectionsListContainer"
+        listContainer.Parent = scrollContent
+        listContainer.LayoutOrder = layoutOrder
+        listContainer.BackgroundTransparency = 1
+        listContainer.Size = UDim2.new(1, 0, 0, 0)
+        listContainer.AutomaticSize = Enum.AutomaticSize.Y
+
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.Parent = listContainer
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        listLayout.Padding = UDim.new(0, 8)
+
+        local function refresh_visible_entries()
+            local query = (searchBox and searchBox.Text or ""):lower():gsub("%s+", "")
+            for _, entry in ipairs(listContainer:GetChildren()) do
+                if entry:IsA("Frame") and entry:FindFirstChild("NameLabel") then
+                    local nameLabel = entry.NameLabel
+                    local name = (nameLabel and nameLabel.Text or ""):lower():gsub("%s+", "")
+                    entry.Visible = query == "" or name:find(query, 1, true) ~= nil
+                end
+            end
+        end
+
+        if searchBox then
+            searchBox:GetPropertyChangedSignal("Text"):Connect(refresh_visible_entries)
+        end
 
         task.spawn(function()
             local friends = HttpUtil.get_friends(Services.LocalPlayer.UserId)
-            
             if not friends or #friends == 0 then
                 local empty = Instance.new("TextLabel")
-                empty.Parent = scrollContent
-                empty.LayoutOrder = layoutOrder
-                empty.Size = UDim2.new(1, -20, 0, 40)
+                empty.Parent = listContainer
+                empty.LayoutOrder = 1
+                empty.Size = UDim2.new(1, 0, 0, 40)
                 empty.BackgroundTransparency = 1
                 empty.Font = Enum.Font.Gotham
                 empty.Text = "Tidak ada koneksi."
@@ -257,27 +313,31 @@ function Connections.create(scrollContent)
                 return
             end
 
-            -- Tampilkan semua friends, presence akan di-load secara async di entry
-            local hasOnline = false
+            -- Cek presence dulu, pisah online vs offline
+            local onlineList = {}
+            local offlineList = {}
             for _, friend in ipairs(friends) do
                 if friend.id then
-                    -- Buat entry untuk semua friends
-                    create_connection_entry(scrollContent, friend, layoutOrder)
-                    layoutOrder = layoutOrder + 1
-                    hasOnline = true
+                    friend.displayName = friend.displayName or friend.name
+                    friend.name = friend.name or friend.displayName or ("User " .. tostring(friend.id))
+                    local presence = HttpUtil.get_user_presence(friend.id)
+                    local isOnline = presence and (presence.userPresenceType == 1 or presence.userPresenceType == 2)
+                    if isOnline then
+                        table.insert(onlineList, friend)
+                    else
+                        table.insert(offlineList, friend)
+                    end
                 end
             end
 
-            if not hasOnline then
-                local empty = Instance.new("TextLabel")
-                empty.Parent = scrollContent
-                empty.LayoutOrder = layoutOrder
-                empty.Size = UDim2.new(1, -20, 0, 40)
-                empty.BackgroundTransparency = 1
-                empty.Font = Enum.Font.Gotham
-                empty.Text = "Tidak ada koneksi online."
-                empty.TextColor3 = Settings.colors.text_tertiary
-                empty.TextSize = 12
+            local order = 0
+            for _, friend in ipairs(onlineList) do
+                create_connection_entry(listContainer, friend, order)
+                order = order + 1
+            end
+            for _, friend in ipairs(offlineList) do
+                create_connection_entry(listContainer, friend, order)
+                order = order + 1
             end
         end)
     end)

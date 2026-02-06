@@ -35,7 +35,7 @@ local function add_highlight(player)
     hl.OutlineColor = OUTLINE_COLOR
     hl.FillTransparency = FILL_TRANSPARENCY
     hl.OutlineTransparency = OUTLINE_TRANSPARENCY
-    hl.DepthMode = Enum.HighlightDepthMode.Occluded
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     hl.Parent = char
     highlights[player] = hl
 end

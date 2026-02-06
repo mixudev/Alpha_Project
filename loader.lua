@@ -259,12 +259,6 @@ local function load_all()
         confirmGui.ResetOnSpawn = false
         confirmGui.DisplayOrder = 300
         confirmGui.Parent = CoreGui
-        local overlay = Instance.new("Frame")
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 0.5
-        overlay.BorderSizePixel = 0
-        overlay.Parent = confirmGui
         local box = Instance.new("Frame")
         box.Size = UDim2.new(0, 320, 0, 140)
         box.Position = UDim2.new(0.5, -160, 0.5, -70)
@@ -305,6 +299,7 @@ local function load_all()
             pcall(function() DroneFeature.toggle(false) end)
             pcall(function() NightVisionFeature.toggle(false) end)
             pcall(function() ChamsFeature.toggle(false) end)
+            pcall(function() PlayerSpectate.stop() end)
             Config.reset_all_features()
             destroy_confirm()
             doClose()
@@ -442,9 +437,18 @@ local function load_all()
         local Section = UIComponents.Section
         local Toggle = UIComponents.Toggle
         Section.new(utilityPage, "🔧 Visual Utility", 1)
-        Toggle.new(utilityPage, "Night Vision", 2, function(enabled)
-            pcall(function() NightVisionFeature.toggle(enabled) end)
-        end)
+        local chamsTitle = Instance.new("TextLabel")
+        chamsTitle.Name = "ChamsTitle"
+        chamsTitle.Parent = utilityPage
+        chamsTitle.LayoutOrder = 2
+        chamsTitle.BackgroundTransparency = 1
+        chamsTitle.Size = UDim2.new(1, -20, 0, 24)
+        chamsTitle.Font = Enum.Font.GothamBold
+        chamsTitle.Text = "Chams — highlight pemain tembus dinding (terlihat dari jauh)"
+        chamsTitle.TextColor3 = Config.colors.text_primary
+        chamsTitle.TextSize = 12
+        chamsTitle.TextXAlignment = Enum.TextXAlignment.Left
+        chamsTitle.TextWrapped = true
         Toggle.new(utilityPage, "Chams", 3, function(enabled)
             pcall(function() ChamsFeature.toggle(enabled) end)
         end)
