@@ -72,7 +72,7 @@ function UIMain.create(options)
     TitleLabel.Position = UDim2.new(0, 15, 0, 0)
     TitleLabel.Size = UDim2.new(0.5, 0, 1, 0)
     TitleLabel.Font = Enum.Font.Gotham
-    TitleLabel.Text = "Alpha Project"
+    TitleLabel.Text = "Alpha Project v1.0.1"
     TitleLabel.TextColor3 = Settings.colors.text_secondary
     TitleLabel.TextSize = 16
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left

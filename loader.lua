@@ -697,7 +697,7 @@ local function load_all()
         add_info_row(infoPage, "Job ID", jobId, 5)
         add_info_row(infoPage, "Creator Type", creatorType, 6)
         add_info_row(infoPage, "Creator ID", creatorId, 7)
-        add_info_row(infoPage, "Pemain", numPlayers .. " / " .. maxPlayers, 8)
+        add_info_row(infoPage, "User di Map", numPlayers .. " / " .. maxPlayers, 8)
         add_info_row(infoPage, "Lingkungan", env, 9)
         if Lighting then
             add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 10)

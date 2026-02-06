@@ -243,19 +243,32 @@ function Connections.create(scrollContent)
 
         task.spawn(function()
             local friends = HttpUtil.get_friends(Services.LocalPlayer.UserId)
-            local onlineFriends = {}
             
-            -- Check which friends are online
-            for _, friend in ipairs(friends or {}) do
+            if not friends or #friends == 0 then
+                local empty = Instance.new("TextLabel")
+                empty.Parent = scrollContent
+                empty.LayoutOrder = layoutOrder
+                empty.Size = UDim2.new(1, -20, 0, 40)
+                empty.BackgroundTransparency = 1
+                empty.Font = Enum.Font.Gotham
+                empty.Text = "Tidak ada koneksi."
+                empty.TextColor3 = Settings.colors.text_tertiary
+                empty.TextSize = 12
+                return
+            end
+
+            -- Tampilkan semua friends, presence akan di-load secara async di entry
+            local hasOnline = false
+            for _, friend in ipairs(friends) do
                 if friend.id then
-                    local presence = HttpUtil.get_user_presence(friend.id)
-                    if presence and (presence.userPresenceType == 1 or presence.userPresenceType == 2) then
-                        table.insert(onlineFriends, friend)
-                    end
+                    -- Buat entry untuk semua friends
+                    create_connection_entry(scrollContent, friend, layoutOrder)
+                    layoutOrder = layoutOrder + 1
+                    hasOnline = true
                 end
             end
 
-            if #onlineFriends == 0 then
+            if not hasOnline then
                 local empty = Instance.new("TextLabel")
                 empty.Parent = scrollContent
                 empty.LayoutOrder = layoutOrder
@@ -265,11 +278,6 @@ function Connections.create(scrollContent)
                 empty.Text = "Tidak ada koneksi online."
                 empty.TextColor3 = Settings.colors.text_tertiary
                 empty.TextSize = 12
-            else
-                for _, friend in ipairs(onlineFriends) do
-                    create_connection_entry(scrollContent, friend, layoutOrder)
-                    layoutOrder = layoutOrder + 1
-                end
             end
         end)
     end)

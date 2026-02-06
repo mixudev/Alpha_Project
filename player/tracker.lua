@@ -117,10 +117,29 @@ local function create_entry(parent, player, layoutOrder, isDirect)
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 
-    local infoBtn = ButtonComponent.new(playerFrame, "Info", UDim2.new(0.55, 5, 0.5, -16), function()
+    local infoBtn = ButtonComponent.new(playerFrame, "Info", UDim2.new(0.4, 5, 0.5, -16), function()
         Tracker.show_connection_info(player)
     end)
-    infoBtn.Size = UDim2.new(0.4, -15, 0, 32)
+    infoBtn.Size = UDim2.new(0.18, -5, 0, 32)
+    
+    local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") or require(script.Parent:FindFirstChild("spectate"))
+    local povBtn = ButtonComponent.new(playerFrame, "POV", UDim2.new(0.59, 5, 0.5, -16), function()
+        Spectate.start(player)
+    end)
+    povBtn.Size = UDim2.new(0.18, -5, 0, 32)
+    
+    local tpBtn = ButtonComponent.new(playerFrame, "TP", UDim2.new(0.78, 5, 0.5, -16), function()
+        local character = Services.LocalPlayer.Character
+        local targetCharacter = player.Character
+        if character and targetCharacter then
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart and targetRootPart then
+                humanoidRootPart.CFrame = targetRootPart.CFrame
+            end
+        end
+    end)
+    tpBtn.Size = UDim2.new(0.18, -5, 0, 32)
 end
 
 -- Section label (sama seperti Section di halaman lain)
@@ -322,12 +341,6 @@ function Tracker.show_connection_info(player)
                 end
             end
         end
-        local koneksi5 = {}
-        for i = 1, math.min(5, #(friends or {})) do
-            local f = friends[i]
-            table.insert(koneksi5, {id = f.id, name = f.name or f.displayName or ("User " .. tostring(f.id))})
-        end
-
         loadingLabel.Visible = false
 
         local layoutOrder = 1
@@ -410,105 +423,6 @@ function Tracker.show_connection_info(player)
                 connStatus.TextColor3 = Settings.colors.status_on
                 connStatus.TextSize = 11
                 connStatus.TextXAlignment = Enum.TextXAlignment.Left
-            end
-        end
-
-        -- Section: Koneksi (5)
-        local section2Title = Instance.new("TextLabel")
-        section2Title.Parent = content
-        section2Title.LayoutOrder = layoutOrder
-        layoutOrder = layoutOrder + 1
-        section2Title.Size = UDim2.new(1, 0, 0, 24)
-        section2Title.BackgroundTransparency = 1
-        section2Title.Font = Enum.Font.GothamBold
-        section2Title.Text = "👥 Koneksi lainnya (" .. #koneksi5 .. ")"
-        section2Title.TextColor3 = Settings.colors.text_primary
-        section2Title.TextSize = 14
-        section2Title.TextXAlignment = Enum.TextXAlignment.Left
-
-        if #koneksi5 == 0 then
-            local emptyLabel2 = Instance.new("TextLabel")
-            emptyLabel2.Parent = content
-            emptyLabel2.LayoutOrder = layoutOrder
-            layoutOrder = layoutOrder + 1
-            emptyLabel2.Size = UDim2.new(1, 0, 0, 30)
-            emptyLabel2.BackgroundTransparency = 1
-            emptyLabel2.Font = Enum.Font.Gotham
-            emptyLabel2.Text = "Tidak ada koneksi."
-            emptyLabel2.TextColor3 = Settings.colors.text_tertiary
-            emptyLabel2.TextSize = 12
-        else
-            for _, conn in ipairs(koneksi5) do
-                local connFrame = Instance.new("Frame")
-                connFrame.Parent = content
-                connFrame.LayoutOrder = layoutOrder
-                layoutOrder = layoutOrder + 1
-                connFrame.BackgroundColor3 = Settings.colors.bg_light
-                connFrame.Size = UDim2.new(1, 0, 0, 50)
-                connFrame.BorderSizePixel = 0
-
-                local connCorner = Instance.new("UICorner")
-                connCorner.CornerRadius = UDim.new(0, 6)
-                connCorner.Parent = connFrame
-
-                local connStroke = Instance.new("UIStroke")
-                connStroke.Color = Color3.fromRGB(130, 100, 0)
-                connStroke.Thickness = 1
-                connStroke.Transparency = 0.3
-                connStroke.Parent = connFrame
-
-                local connAvatar = Instance.new("ImageLabel")
-                connAvatar.Parent = connFrame
-                connAvatar.BackgroundColor3 = Settings.colors.bg_medium
-                connAvatar.BorderSizePixel = 0
-                connAvatar.Position = UDim2.new(0, 8, 0.5, -17)
-                connAvatar.Size = UDim2.new(0, 34, 0, 34)
-                connAvatar.Image = HttpUtil.get_headshot_url(conn.id, 150)
-                
-                local connAvatarCorner = Instance.new("UICorner")
-                connAvatarCorner.CornerRadius = UDim.new(0, 17)
-                connAvatarCorner.Parent = connAvatar
-
-                local connName = Instance.new("TextLabel")
-                connName.Parent = connFrame
-                connName.BackgroundTransparency = 1
-                connName.Position = UDim2.new(0, 50, 0, 8)
-                connName.Size = UDim2.new(1, -58, 0, 20)
-                connName.Font = Enum.Font.GothamBold
-                connName.Text = conn.name
-                connName.TextColor3 = Settings.colors.text_primary
-                connName.TextSize = 13
-                connName.TextXAlignment = Enum.TextXAlignment.Left
-                connName.TextTruncate = Enum.TextTruncate.AtEnd
-
-                -- Check presence
-                task.spawn(function()
-                    local presence = HttpUtil.get_user_presence(conn.id)
-                    local connStatus = Instance.new("TextLabel")
-                    connStatus.Parent = connFrame
-                    connStatus.BackgroundTransparency = 1
-                    connStatus.Position = UDim2.new(0, 50, 0, 28)
-                    connStatus.Size = UDim2.new(1, -58, 0, 16)
-                    connStatus.Font = Enum.Font.Gotham
-                    connStatus.TextSize = 11
-                    connStatus.TextXAlignment = Enum.TextXAlignment.Left
-                    
-                    if presence then
-                        if presence.userPresenceType == 2 then
-                            connStatus.Text = "🟢 Sedang bermain"
-                            connStatus.TextColor3 = Settings.colors.status_on
-                        elseif presence.userPresenceType == 1 then
-                            connStatus.Text = "⚪ Online"
-                            connStatus.TextColor3 = Settings.colors.text_secondary
-                        else
-                            connStatus.Text = "⚫ Offline"
-                            connStatus.TextColor3 = Settings.colors.status_off
-                        end
-                    else
-                        connStatus.Text = "⚫ Offline"
-                        connStatus.TextColor3 = Settings.colors.status_off
-                    end
-                end)
             end
         end
     end)
