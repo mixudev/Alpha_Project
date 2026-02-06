@@ -354,4 +354,9 @@ function NotifikasiFeature.toggle(enabled)
     if enabled then enable() else disable() end
 end
 
+-- Tampilkan notifikasi dari luar (untuk menu Test, dll.)
+function NotifikasiFeature.show(title, text, icon)
+    show_notification(title or "Notifikasi", text or "—", icon or "◆")
+end
+
 return NotifikasiFeature

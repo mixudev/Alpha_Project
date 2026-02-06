@@ -542,33 +542,48 @@ local function load_all()
             for _, c in pairs(testPage:GetChildren()) do
                 if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
             end
+            local TweenService = game:GetService("TweenService")
             local Section = UIComponents.Section
             local categories = SecurityFeature.get_categories()
             local testList = SecurityFeature.get_test_list()
             local layoutOrder = 1
+
+            local function button_press_effect(btn, origColor)
+                origColor = origColor or btn.BackgroundColor3
+                TweenService:Create(btn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(90, 100, 120) }):Play()
+                task.delay(0.15, function()
+                    if btn.Parent then TweenService:Create(btn, TweenInfo.new(0.15), { BackgroundColor3 = origColor }):Play() end
+                end)
+            end
+
+            local function show_test_notif(success, message, detail)
+                local icon = success and "✓" or "✗"
+                pcall(function() NotifikasiFeature.show(message, detail or "", icon) end)
+            end
+
             Section.new(testPage, "🧪 Test Exploitasi", layoutOrder)
             layoutOrder = layoutOrder + 1
             local desc = Instance.new("TextLabel")
             desc.Parent = testPage
             desc.LayoutOrder = layoutOrder
             layoutOrder = layoutOrder + 1
-            desc.Size = UDim2.new(1, -20, 0, 36)
+            desc.Size = UDim2.new(1, -20, 0, 40)
             desc.BackgroundTransparency = 1
             desc.Font = Enum.Font.Gotham
-            desc.Text = "Test satu per satu untuk cek mana yang terbuka/rawan. Hasil tampil di bawah."
+            desc.Text = "Test manual satu per satu. Pilih target (Ban), isi pesan (Announce), lalu jalankan. Setiap test mengirim notifikasi berhasil/gagal."
             desc.TextColor3 = Config.colors.text_tertiary
             desc.TextSize = 11
             desc.TextXAlignment = Enum.TextXAlignment.Left
             desc.TextYAlignment = Enum.TextYAlignment.Top
             desc.TextWrapped = true
+
             local resultBox = Instance.new("ScrollingFrame")
             resultBox.Name = "TestResultBox"
-            resultBox.Size = UDim2.new(1, -20, 0, 200)
+            resultBox.Size = UDim2.new(1, -20, 0, 180)
             resultBox.BackgroundColor3 = Config.colors.bg_light
             resultBox.BorderSizePixel = 0
             resultBox.ScrollBarThickness = 6
             resultBox.CanvasSize = UDim2.new(0, 0, 0, 0)
-            resultBox.Parent = nil
             local resultListLayout = Instance.new("UIListLayout")
             resultListLayout.SortOrder = Enum.SortOrder.LayoutOrder
             resultListLayout.Padding = UDim.new(0, 6)
@@ -581,9 +596,7 @@ local function load_all()
             local function append_result(r)
                 local status = r.status or "OK"
                 local detail = r.detail or ""
-                if r.error then
-                    detail = detail .. (detail ~= "" and "\n" or "") .. "Error: " .. tostring(r.error)
-                end
+                if r.error then detail = detail .. (detail ~= "" and "\n" or "") .. "Error: " .. tostring(r.error) end
                 lastTestResultsText = lastTestResultsText .. "[" .. status .. "] " .. (r.name or r.id) .. "\n" .. detail .. "\n\n"
                 local line = Instance.new("TextLabel")
                 line.Parent = resultBox
@@ -603,11 +616,12 @@ local function load_all()
                 line.TextWrapped = true
                 task.defer(function()
                     if resultBox.Parent then
-                        resultBox.CanvasSize = UDim2.new(0, 0, 0, math.max(200, resultListLayout.AbsoluteContentSize.Y + 16))
+                        resultBox.CanvasSize = UDim2.new(0, 0, 0, math.max(180, resultListLayout.AbsoluteContentSize.Y + 16))
                     end
                 end)
             end
-            local function make_test_button(parent, order, testDef)
+
+            local function make_simple_button(parent, order, label, onClick)
                 local btn = Instance.new("TextButton")
                 btn.Parent = parent
                 btn.LayoutOrder = order
@@ -615,7 +629,7 @@ local function load_all()
                 btn.BackgroundColor3 = Color3.fromRGB(50, 55, 65)
                 btn.BorderSizePixel = 0
                 btn.Font = Enum.Font.GothamBold
-                btn.Text = testDef.short or testDef.name
+                btn.Text = label
                 btn.TextColor3 = Color3.fromRGB(255, 255, 255)
                 btn.TextSize = 12
                 btn.AutoButtonColor = false
@@ -623,27 +637,132 @@ local function load_all()
                 corner.CornerRadius = UDim.new(0, 6)
                 corner.Parent = btn
                 btn.MouseButton1Click:Connect(function()
-                    resultBox.Parent = testPage
-                    local r = SecurityFeature.run_single_test(testDef.id)
-                    append_result(r)
+                    button_press_effect(btn)
+                    if onClick then onClick() end
                 end)
                 return btn
             end
+
             local categoryOrder = { "remote", "env", "scripts", "suspicious" }
             for _, catId in ipairs(categoryOrder) do
                 local catLabel = categories[catId]
                 if catLabel then
-                    Section.new(testPage, catLabel, layoutOrder)
-                    layoutOrder = layoutOrder + 1
-                    for _, t in ipairs(testList) do
-                        if t.category == catId then
-                            make_test_button(testPage, layoutOrder, t)
-                            layoutOrder = layoutOrder + 1
+                Section.new(testPage, catLabel, layoutOrder)
+                layoutOrder = layoutOrder + 1
+                for _, t in ipairs(testList) do
+                    if t.category == catId then
+                    if t.id == "ban" then
+                        Section.new(testPage, "Target player (untuk Test Ban)", layoutOrder)
+                        layoutOrder = layoutOrder + 1
+                        local players = SecurityFeature.get_players_list()
+                        local selectedPlayer = (#players > 0) and players[1].player or nil
+                        local row = Instance.new("Frame")
+                        row.Parent = testPage
+                        row.LayoutOrder = layoutOrder
+                        layoutOrder = layoutOrder + 1
+                        row.Size = UDim2.new(1, -20, 0, 32)
+                        row.BackgroundTransparency = 1
+                        local rowList = Instance.new("UIListLayout")
+                        rowList.Parent = row
+                        rowList.FillDirection = Enum.FillDirection.Horizontal
+                        rowList.Padding = UDim.new(0, 6)
+                        rowList.VerticalAlignment = Enum.VerticalAlignment.Center
+                        for _, p in ipairs(players) do
+                            local pBtn = Instance.new("TextButton")
+                            pBtn.Parent = row
+                            pBtn.Size = UDim2.new(0, 0, 0, 28)
+                            pBtn.AutomaticSize = Enum.AutomaticSize.X
+                            pBtn.BackgroundColor3 = Color3.fromRGB(45, 50, 60)
+                            pBtn.BorderSizePixel = 0
+                            pBtn.Font = Enum.Font.Gotham
+                            pBtn.Text = " " .. p.name .. " "
+                            pBtn.TextColor3 = Config.colors.text_secondary
+                            pBtn.TextSize = 11
+                            local pCorner = Instance.new("UICorner")
+                            pCorner.CornerRadius = UDim.new(0, 4)
+                            pCorner.Parent = pBtn
+                            pBtn.MouseButton1Click:Connect(function()
+                                selectedPlayer = p.player
+                                button_press_effect(pBtn, Color3.fromRGB(45, 50, 60))
+                                show_test_notif(true, "Target dipilih", p.name)
+                            end)
                         end
+                        make_simple_button(testPage, layoutOrder, "Test Ban (ke target terpilih)", function()
+                            resultBox.Parent = testPage
+                            if not selectedPlayer then
+                                show_test_notif(false, "Test Ban gagal", "Pilih player dulu.")
+                                return
+                            end
+                            local out = SecurityFeature.execute_test_ban(selectedPlayer)
+                            show_test_notif(out.success, out.message, out.detail)
+                            append_result({ id = "ban", name = "Test Ban", status = out.success and "OK" or "FAIL", detail = out.detail })
+                        end)
+                        layoutOrder = layoutOrder + 1
+                    elseif t.id == "announcement" then
+                        local announceBox = Instance.new("TextBox")
+                        announceBox.Parent = testPage
+                        announceBox.LayoutOrder = layoutOrder
+                        layoutOrder = layoutOrder + 1
+                        announceBox.Size = UDim2.new(1, -20, 0, 36)
+                        announceBox.BackgroundColor3 = Config.colors.bg_light
+                        announceBox.BorderSizePixel = 0
+                        announceBox.Font = Enum.Font.Gotham
+                        announceBox.PlaceholderText = "Masukkan pesan untuk Announce..."
+                        announceBox.Text = ""
+                        announceBox.TextColor3 = Config.colors.text_primary
+                        announceBox.TextSize = 12
+                        announceBox.ClearTextOnFocus = false
+                        local abCorner = Instance.new("UICorner")
+                        abCorner.CornerRadius = UDim.new(0, 6)
+                        abCorner.Parent = announceBox
+                        local announcePadding = Instance.new("UIPadding")
+                        announcePadding.PaddingLeft = UDim.new(0, 10)
+                        announcePadding.PaddingRight = UDim.new(0, 10)
+                        announcePadding.Parent = announceBox
+                        make_simple_button(testPage, layoutOrder, "Kirim Announce (pesan di atas)", function()
+                            resultBox.Parent = testPage
+                            local out = SecurityFeature.execute_test_announce(announceBox.Text)
+                            show_test_notif(out.success, out.message, out.detail)
+                            append_result({ id = "announcement", name = "Test Announce", status = out.success and "OK" or "FAIL", detail = out.detail })
+                        end)
+                        layoutOrder = layoutOrder + 1
+                    elseif t.id == "item" then
+                        make_simple_button(testPage, layoutOrder, "Test Item (get/unlock semua)", function()
+                            resultBox.Parent = testPage
+                            local out = SecurityFeature.execute_test_item()
+                            show_test_notif(out.success, out.message, out.detail)
+                            append_result({ id = "item", name = "Test Item", status = out.success and "OK" or "FAIL", detail = out.detail })
+                        end)
+                        layoutOrder = layoutOrder + 1
+                    else
+                        local testDef = t
+                        make_simple_button(testPage, layoutOrder, t.short or t.name, function()
+                            resultBox.Parent = testPage
+                            local out
+                            if testDef.id == "remotes" then out = SecurityFeature.execute_test_remotes()
+                            elseif testDef.id == "bindable" then out = SecurityFeature.execute_test_bindable()
+                            elseif testDef.id == "loadstring" then out = SecurityFeature.execute_test_loadstring()
+                            elseif testDef.id == "getfenv" then out = SecurityFeature.execute_test_getfenv()
+                            elseif testDef.id == "http" then out = SecurityFeature.execute_test_http()
+                            elseif testDef.id == "admin" then out = SecurityFeature.execute_test_admin()
+                            else
+                                local r = SecurityFeature.run_single_test(testDef.id)
+                                append_result(r)
+                                show_test_notif((r.status == "OK" or r.status == "INFO"), r.name, r.detail)
+                                return
+                            end
+                            if out then
+                                show_test_notif(out.success, out.message, out.detail)
+                                append_result({ id = testDef.id, name = testDef.name, status = out.success and "OK" or "FAIL", detail = out.detail })
+                            end
+                        end)
+                        layoutOrder = layoutOrder + 1
                     end
                 end
+                end
             end
-            Section.new(testPage, "Jalankan Semua", layoutOrder)
+
+            Section.new(testPage, "Jalankan Semua (scan)", layoutOrder)
             layoutOrder = layoutOrder + 1
             local testAllBtn = Instance.new("TextButton")
             testAllBtn.Parent = testPage
@@ -653,7 +772,7 @@ local function load_all()
             testAllBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 120)
             testAllBtn.BorderSizePixel = 0
             testAllBtn.Font = Enum.Font.GothamBold
-            testAllBtn.Text = "▶ Test Semua"
+            testAllBtn.Text = "▶ Test Semua (scan)"
             testAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             testAllBtn.TextSize = 14
             testAllBtn.AutoButtonColor = false
@@ -661,21 +780,21 @@ local function load_all()
             testAllCorner.CornerRadius = UDim.new(0, 6)
             testAllCorner.Parent = testAllBtn
             testAllBtn.MouseButton1Click:Connect(function()
+                button_press_effect(testAllBtn, Color3.fromRGB(0, 100, 120))
                 resultBox.Parent = testPage
                 for _, c in pairs(resultBox:GetChildren()) do
                     if not c:IsA("UIListLayout") and not c:IsA("UIPadding") then c:Destroy() end
                 end
                 lastTestResultsText = ""
-                testAllBtn.Text = "Menjalankan..."
+                testAllBtn.Text = "Scanning..."
                 task.spawn(function()
                     local results = SecurityFeature.run_tests()
-                    for _, r in ipairs(results) do
-                        append_result(r)
-                    end
-                    testAllBtn.Text = "▶ Test Semua"
-                    copyTestBtn.Visible = true
+                    for _, r in ipairs(results) do append_result(r) end
+                    testAllBtn.Text = "▶ Test Semua (scan)"
+                    pcall(function() NotifikasiFeature.show("Scan selesai", #results .. " test dijalankan. Lihat hasil di bawah.", "✓") end)
                 end)
             end)
+
             resultBox.Parent = testPage
             resultBox.LayoutOrder = layoutOrder
             resultListLayout.Parent = resultBox
@@ -697,12 +816,14 @@ local function load_all()
             copyTestCorner.CornerRadius = UDim.new(0, 6)
             copyTestCorner.Parent = copyTestBtn
             copyTestBtn.MouseButton1Click:Connect(function()
+                button_press_effect(copyTestBtn, Config.colors.bg_light)
                 if lastTestResultsText and #lastTestResultsText > 0 then
                     pcall(function() if setclipboard then setclipboard(lastTestResultsText) end end)
                     pcall(function()
                         local uis = game:GetService("UserInputService")
                         if uis and uis.SetClipboard then uis:SetClipboard(lastTestResultsText) end
                     end)
+                    pcall(function() NotifikasiFeature.show("Copy", "Hasil disalin ke clipboard.", "📋") end)
                 end
             end)
         end)

@@ -33,6 +33,7 @@ local TEST_LIST = {
     { id = "admin", name = "Remote Admin/Command", short = "Admin", category = "suspicious" },
     { id = "ban", name = "Remote Ban/Kick", short = "Ban", category = "suspicious" },
     { id = "announcement", name = "Remote Announce/Broadcast", short = "Announce", category = "suspicious" },
+    { id = "item", name = "Item / Unlock", short = "Item", category = "suspicious" },
 }
 
 local CATEGORY_LABELS = {
@@ -206,6 +207,26 @@ local function run_single(id)
         return "OK", "Tidak ada.", nil
     end
 
+    if id == "item" then
+        local keywords = { "Item", "GetItem", "GiveItem", "Unlock", "Open", "Give", "Add", "Purchase", "Buy" }
+        local list = {}
+        for _, obj in pairs(game:GetDescendants()) do
+            if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) then
+                local path = get_full_path(obj)
+                for _, kw in ipairs(keywords) do
+                    if path:find(kw, 1, true) then
+                        table.insert(list, path)
+                        break
+                    end
+                end
+            end
+        end
+        if #list > 0 then
+            return "WARNING", #list .. " remote (Item/Unlock):\n" .. table.concat(list, "\n"), nil
+        end
+        return "OK", "Tidak ada.", nil
+    end
+
     if id == "http" then
         local ok = pcall(function() return game:GetService("HttpService").HttpEnabled end)
         if ok and game:GetService("HttpService").HttpEnabled then
@@ -246,6 +267,208 @@ function SecurityFeature.run_tests()
         })
     end
     return results
+end
+
+-- ========== Eksekusi tes manual (untuk menu Test) ==========
+-- Return: { success, message, detail } untuk notifikasi
+
+local function get_remotes_by_keywords(keywords)
+    local list = {}
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local path = get_full_path(obj)
+            for _, kw in ipairs(keywords) do
+                if path:find(kw, 1, true) then
+                    table.insert(list, { obj = obj, path = path })
+                    break
+                end
+            end
+        end
+    end
+    return list
+end
+
+-- Test Ban: pilih player, fire remote Ban/Kick dengan target player
+function SecurityFeature.execute_test_ban(player)
+    local list = get_remotes_by_keywords({ "Ban", "Kick", "Punish", "Moderate" })
+    if #list == 0 then
+        return { success = false, message = "Test Ban gagal", detail = "Tidak ada remote Ban/Kick ditemukan." }
+    end
+    local target = player
+    if type(player) == "table" and player.UserId then
+        target = player
+    elseif type(player) == "number" then
+        target = player
+    elseif type(player) == "string" then
+        local plr = Services.Players:FindFirstChild(player)
+        target = plr or player
+    end
+    local fired, errCount = 0, 0
+    for _, item in ipairs(list) do
+        local ok, err = pcall(function()
+            if item.obj:IsA("RemoteEvent") then
+                item.obj:FireServer(target)
+            else
+                item.obj:InvokeServer(target)
+            end
+        end)
+        if ok then fired = fired + 1 else errCount = errCount + 1 end
+    end
+    if fired > 0 then
+        return { success = true, message = "Test Ban berhasil", detail = fired .. " remote di-fire ke target." }
+    end
+    return { success = false, message = "Test Ban gagal", detail = "Semua remote error (" .. errCount .. ")." }
+end
+
+-- Test Announce: masukkan pesan, fire remote Announce/Broadcast
+function SecurityFeature.execute_test_announce(text)
+    local list = get_remotes_by_keywords({ "Announce", "Broadcast", "Message", "Notify", "Chat" })
+    if #list == 0 then
+        return { success = false, message = "Test Announce gagal", detail = "Tidak ada remote Announce/Broadcast." }
+    end
+    local msg = (text and #tostring(text) > 0) and tostring(text) or "[Test] Pesan uji"
+    local fired, errCount = 0, 0
+    for _, item in ipairs(list) do
+        local ok = pcall(function()
+            if item.obj:IsA("RemoteEvent") then
+                item.obj:FireServer(msg)
+            else
+                item.obj:InvokeServer(msg)
+            end
+        end)
+        if ok then fired = fired + 1 else errCount = errCount + 1 end
+    end
+    if fired > 0 then
+        return { success = true, message = "Pesan terkirim", detail = fired .. " remote di-fire." }
+    end
+    return { success = false, message = "Test Announce gagal", detail = "Semua remote error." }
+end
+
+-- Test Item: fire remote GetItem/GiveItem/Unlock/Open agar item terbuka
+function SecurityFeature.execute_test_item()
+    local list = get_remotes_by_keywords({ "Item", "GetItem", "GiveItem", "Unlock", "Open", "Give", "Add", "Purchase", "Buy" })
+    if #list == 0 then
+        return { success = false, message = "Test Item gagal", detail = "Tidak ada remote Item/Unlock ditemukan." }
+    end
+    local fired, errCount = 0, 0
+    for _, item in ipairs(list) do
+        local ok = pcall(function()
+            if item.obj:IsA("RemoteEvent") then
+                item.obj:FireServer()
+            else
+                item.obj:InvokeServer()
+            end
+        end)
+        if ok then fired = fired + 1 else errCount = errCount + 1 end
+    end
+    if fired > 0 then
+        return { success = true, message = "Test Item berhasil", detail = fired .. " remote di-fire. Cek inventory/game." }
+    end
+    return { success = false, message = "Test Item gagal", detail = "Semua remote error (" .. errCount .. ")." }
+end
+
+-- Test Remote: fire semua RemoteEvent, invoke semua RemoteFunction
+function SecurityFeature.execute_test_remotes()
+    local fired, invoked, errCount = 0, 0, 0
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local ok = pcall(function() obj:FireServer() end)
+            if ok then fired = fired + 1 else errCount = errCount + 1 end
+        elseif obj:IsA("RemoteFunction") then
+            local ok = pcall(function() obj:InvokeServer() end)
+            if ok then invoked = invoked + 1 else errCount = errCount + 1 end
+        end
+    end
+    local total = fired + invoked
+    if total > 0 then
+        return { success = true, message = "Test Remote berhasil", detail = "Fire: " .. fired .. ", Invoke: " .. invoked .. (errCount > 0 and (", Error: " .. errCount) or "") }
+    end
+    return { success = false, message = "Test Remote gagal", detail = "Tidak ada remote atau semua error." }
+end
+
+-- Test Bindable: fire/invoke Bindable di ReplicatedStorage
+function SecurityFeature.execute_test_bindable()
+    local fired, errCount = 0, 0
+    local rs = game:GetService("ReplicatedStorage")
+    for _, obj in pairs(game:GetDescendants()) do
+        if (obj:IsA("BindableEvent") or obj:IsA("BindableFunction")) and obj:IsDescendantOf(rs) then
+            local ok = pcall(function()
+                if obj:IsA("BindableEvent") then obj:Fire() else obj:Invoke() end
+            end)
+            if ok then fired = fired + 1 else errCount = errCount + 1 end
+        end
+    end
+    if fired > 0 then
+        return { success = true, message = "Test Bindable berhasil", detail = fired .. " di-fire." }
+    end
+    return { success = false, message = "Test Bindable gagal", detail = "Tidak ada atau semua error." }
+end
+
+-- Test loadstring
+function SecurityFeature.execute_test_loadstring()
+    local ok, res = pcall(function()
+        if type(loadstring) ~= "function" then return nil end
+        return loadstring("return 1")()
+    end)
+    if ok and res == 1 then
+        return { success = true, message = "loadstring terbuka", detail = "Kode dinamis dapat dijalankan." }
+    end
+    return { success = false, message = "loadstring tertutup", detail = ok and "Aman." or tostring(res) }
+end
+
+-- Test getfenv/setfenv
+function SecurityFeature.execute_test_getfenv()
+    local ok, res = pcall(function()
+        if type(getfenv) ~= "function" then return nil end
+        return getfenv(0)
+    end)
+    if ok and res and type(res) == "table" then
+        return { success = true, message = "getfenv terbuka", detail = "Dapat dipakai untuk hook/read state." }
+    end
+    return { success = false, message = "getfenv tertutup", detail = ok and "Aman." or tostring(res) }
+end
+
+-- Test HTTP
+function SecurityFeature.execute_test_http()
+    local ok, enabled = pcall(function()
+        return game:GetService("HttpService").HttpEnabled
+    end)
+    if ok and enabled then
+        return { success = true, message = "HTTP aktif", detail = "Client bisa HTTP request." }
+    end
+    return { success = false, message = "HTTP nonaktif", detail = "Aman." }
+end
+
+-- Test Admin: fire remote Admin/Command dengan argumen kosong atau test
+function SecurityFeature.execute_test_admin()
+    local list = get_remotes_by_keywords({ "Admin", "Command", "Execute", "Script" })
+    if #list == 0 then
+        return { success = false, message = "Test Admin gagal", detail = "Tidak ada remote Admin/Command." }
+    end
+    local fired = 0
+    for _, item in ipairs(list) do
+        local ok = pcall(function()
+            if item.obj:IsA("RemoteEvent") then
+                item.obj:FireServer()
+            else
+                item.obj:InvokeServer()
+            end
+        end)
+        if ok then fired = fired + 1 end
+    end
+    if fired > 0 then
+        return { success = true, message = "Test Admin terkirim", detail = fired .. " remote di-fire." }
+    end
+    return { success = false, message = "Test Admin gagal", detail = "Semua remote error." }
+end
+
+-- Daftar pemain untuk dropdown Test Ban
+function SecurityFeature.get_players_list()
+    local list = {}
+    for _, p in ipairs(Services.Players:GetPlayers()) do
+        table.insert(list, { name = p.DisplayName or p.Name, userId = p.UserId, player = p })
+    end
+    return list
 end
 
 return SecurityFeature
