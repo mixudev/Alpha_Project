@@ -9,12 +9,15 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 
 local FlyFeature = {}
 
--- ============================================
--- FLY STATE
--- ============================================
-
+local FLY_SPEEDS = { 28, 58, 98 }
 local flyActive = false
 local bodyVelocity = nil
+
+local function get_fly_speed()
+    local idx = tonumber(Settings.features.flySpeed) or 2
+    idx = math.clamp(idx, 1, 3)
+    return FLY_SPEEDS[idx]
+end
 
 -- ============================================
 -- START FLY
@@ -65,7 +68,7 @@ function FlyFeature.start()
             moveVector = moveVector - Vector3.new(0, 1, 0)
         end
         
-        bodyVelocity.Velocity = moveVector * 50
+        bodyVelocity.Velocity = moveVector * get_fly_speed()
     end)
     
     table.insert(Settings.connections.all, Settings.connections.fly)
@@ -105,6 +108,15 @@ function FlyFeature.toggle(enabled)
     else
         FlyFeature.stop()
     end
+end
+
+function FlyFeature.set_speed(index)
+    local idx = math.clamp(tonumber(index) or 2, 1, 3)
+    Settings.features.flySpeed = idx
+end
+
+function FlyFeature.get_speed_index()
+    return math.clamp(tonumber(Settings.features.flySpeed) or 2, 1, 3)
 end
 
 -- ============================================

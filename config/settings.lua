@@ -12,6 +12,7 @@ local Settings = {}
 Settings.features = {
     infinityJump = false,
     flyEnabled = false,
+    flySpeed = 2,
     noClipEnabled = false,
     espEnabled = false,
     infinityZoomEnabled = false,

@@ -21,11 +21,19 @@ local lastCheckpointY = {}
 local lastCheckpointPart = {}
 local cachedCheckpointParts = {}
 local lastCheckpointScan = 0
-local CHECKPOINT_CACHE_INTERVAL = 4
+local CHECKPOINT_CACHE_INTERVAL = 3
 local CHECKPOINT_Y_STEP = 80
-local CHECKPOINT_NEAR_DIST = 14
+local CHECKPOINT_NEAR_DIST = 22
 local DISPLAY_TIME = 4.5
-local CHECKPOINT_NAMES = { "Checkpoint", "Finish", "Goal", "End", "FinishLine", "CheckPoint" }
+local GAP_BETWEEN_NOTIF = 0.5
+local notification_queue = {}
+local notification_showing = false
+
+local CHECKPOINT_KEYWORDS = {
+    "check", "finish", "goal", "end", "save", "spawn", "flag", "zone", "stage", "level",
+    "teleport", "portal", "pad", "point", "gate", "start", "respawn", "pole", "line",
+    "reach", "complete", "win", "final", "spot", "mark", "area", "region", "ring", "plate"
+}
 
 local function get_friends_in_game()
     local list = {}
@@ -92,7 +100,7 @@ local function ensure_friends_loaded(callback)
     end)
 end
 
-local function show_notification(title, text, icon)
+local function show_notification_internal(title, text, icon, on_done)
     local gui = Services.CoreGui:FindFirstChild("AlphaNotifGui")
     if not gui then
         gui = Instance.new("ScreenGui")
@@ -192,19 +200,42 @@ local function show_notification(title, text, icon)
             }):Play()
             task.delay(0.35, function()
                 pcall(function() frame:Destroy() end)
+                if on_done then on_done() end
             end)
+        else
+            if on_done then on_done() end
         end
     end)
 end
 
+local function process_notification_queue()
+    if notification_showing or #notification_queue == 0 then return end
+    local item = table.remove(notification_queue, 1)
+    if not item then return end
+    notification_showing = true
+    show_notification_internal(item[1], item[2], item[3], function()
+        notification_showing = false
+        task.delay(GAP_BETWEEN_NOTIF, process_notification_queue)
+    end)
+end
+
+local function show_notification(title, text, icon)
+    table.insert(notification_queue, { title or "Notifikasi", text or "—", icon or "◆" })
+    process_notification_queue()
+end
+
 local function is_checkpoint_part(part)
     if not part or not part:IsA("BasePart") then return false end
-    local name = (part.Name or ""):gsub("%s+", "")
-    for _, cp in ipairs(CHECKPOINT_NAMES) do
-        if name:lower():find((cp:gsub("%s+", "")):lower(), 1, true) then
-            return true
+    local function name_has_keyword(str)
+        if not str or #str == 0 then return false end
+        local lower = str:gsub("%s+", ""):lower()
+        for _, kw in ipairs(CHECKPOINT_KEYWORDS) do
+            if lower:find(kw:lower(), 1, true) then return true end
         end
+        return false
     end
+    if name_has_keyword(part.Name) then return true end
+    if part.Parent and name_has_keyword(part.Parent.Name) then return true end
     return false
 end
 

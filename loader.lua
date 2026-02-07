@@ -399,26 +399,61 @@ local function load_all()
             pcall(function() FlyFeature.toggle(enabled) end)
         end)
 
-        Toggle.new(settingsPage, "No Clip", 4, function(enabled)
+        local flySpeedRow = Instance.new("Frame")
+        flySpeedRow.Parent = settingsPage
+        flySpeedRow.LayoutOrder = 4
+        flySpeedRow.Size = UDim2.new(1, -20, 0, 32)
+        flySpeedRow.BackgroundTransparency = 1
+        local flySpeedLayout = Instance.new("UIListLayout")
+        flySpeedLayout.Parent = flySpeedRow
+        flySpeedLayout.FillDirection = Enum.FillDirection.Horizontal
+        flySpeedLayout.Padding = UDim.new(0, 8)
+        flySpeedLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        local speedLabels = { "Sedang", "Cepat", "Sangat cepat" }
+        for i = 1, 3 do
+            local btn = Instance.new("TextButton")
+            btn.Parent = flySpeedRow
+            btn.Size = UDim2.new(0, 0, 0, 28)
+            btn.AutomaticSize = Enum.AutomaticSize.X
+            btn.BackgroundColor3 = (FlyFeature.get_speed_index() == i) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
+            btn.BorderSizePixel = 0
+            btn.Font = Enum.Font.Gotham
+            btn.Text = "  " .. speedLabels[i] .. "  "
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 11
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 4)
+            corner.Parent = btn
+            btn.MouseButton1Click:Connect(function()
+                pcall(function() FlyFeature.set_speed(i) end)
+                for _, c in ipairs(flySpeedRow:GetChildren()) do
+                    if c:IsA("TextButton") then
+                        c.BackgroundColor3 = (c == btn) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
+                    end
+                end
+            end)
+        end
+
+        Toggle.new(settingsPage, "No Clip", 5, function(enabled)
             pcall(function() NoClipFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🔍 ESP & Camera", 5)
+        Section.new(settingsPage, "🔍 ESP & Camera", 6)
 
-        Toggle.new(settingsPage, "ESP", 6, function(enabled)
+        Toggle.new(settingsPage, "ESP", 7, function(enabled)
             pcall(function() EspFeature.toggle(enabled) end)
         end)
 
-        Toggle.new(settingsPage, "Infinity Zoom", 7, function(enabled)
+        Toggle.new(settingsPage, "Infinity Zoom", 8, function(enabled)
             pcall(function() InfinityZoomFeature.toggle(enabled) end)
         end)
 
-        Toggle.new(settingsPage, "ESP Koneksi", 8, function(enabled)
+        Toggle.new(settingsPage, "ESP Koneksi", 9, function(enabled)
             pcall(function() TrackingFriendsFeature.toggle(enabled) end)
         end)
 
-        Section.new(settingsPage, "🛡️ Lainnya", 9)
-        Toggle.new(settingsPage, "Anti-AFK", 10, function(enabled)
+        Section.new(settingsPage, "🛡️ Lainnya", 10)
+        Toggle.new(settingsPage, "Anti-AFK", 11, function(enabled)
             pcall(function() AntiAfkFeature.toggle(enabled) end)
         end)
     end
