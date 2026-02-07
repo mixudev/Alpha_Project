@@ -2,7 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
-    Version: 1.0.7
+    Version: 1.0.8
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -299,6 +299,8 @@ local function load_all()
             pcall(function() DroneFeature.toggle(false) end)
             pcall(function() NightVisionFeature.toggle(false) end)
             pcall(function() ChamsFeature.toggle(false) end)
+            pcall(function() CameraUserFeature.toggle(false) end)
+            pcall(function() TrackUserFeature.stop() end)
             pcall(function() PlayerSpectate.stop() end)
             Config.reset_all_features()
             destroy_confirm()
@@ -1096,7 +1098,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
-    print("📌 Version: 1.0.7")
+    print("📌 Version: 1.0.8")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     

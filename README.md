@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.7-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
+  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.8-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
   <img src="https://img.shields.io/badge/Roblox-Executor_%26_Local-00a396?style=for-the-badge&labelColor=0d1117" alt="Platform">
 </p>
 
@@ -177,11 +177,73 @@ Alpha_Project/
 
 | Versi | Ringkasan |
 |-------|-----------|
+| **1.0.8** | **Close GUI**: Semua fitur dikembalikan saat GUI ditutup (Camera User, Track User) · Versi di title bar diperbaiki · **Info**: Tombol sosial media (GitHub, Discord) dengan opsi Open/Copy link. |
 | **1.0.7** | **Track User**: Perbaikan dropdown menggunakan UIListLayout · Dropdown sekarang muncul dengan benar · Auto-resize container. |
 | **1.0.6** | **Track User**: Pencarian dipindahkan ke dalam dropdown · Perbaikan bug dropdown tidak muncul · Filter real-time saat mengetik. |
 | **1.0.5** | **Track User**: Kompas horizontal di atas (arah mata angin + derajat + triangle indicator) · Dropdown + pencarian user · UI detail dihapus. |
 | **1.0.4** | **Camera User** (navigasi POV dengan tombol kiri/kanan) · **Track User** (panah navigasi kompas + UI detail jarak/lokasi/health) · Fly 5 kecepatan (Super fast, Ultra fast) · Checkpoint deteksi via leaderstats + Model · Notifikasi antre satu-satu. |
 | **1.0.3** | Players, Settings, Drone, Tracker, Utility, Info. Notifikasi koneksi (tanpa pindah area). Anti-AFK (VirtualUser + nudge). Tracker popup minimalis. Security/Test tidak di GUI. |
+
+<br>
+
+## ▸ Rilis Tag
+
+<details>
+<summary><strong>v1.0.8</strong> - Close GUI & Social Media</summary>
+
+- ✅ **Close GUI**: Semua fitur dikembalikan saat GUI ditutup (Camera User kembali ke kamera normal, Track User dihentikan)
+- ✅ **Versi GUI**: Versi di title bar diperbarui ke v1.0.8
+- ✅ **Info Page**: Tombol sosial media (GitHub & Discord) dengan dropdown menu Open/Copy link
+
+</details>
+
+<details>
+<summary><strong>v1.0.7</strong> - Dropdown Fix</summary>
+
+- ✅ **Track User**: Perbaikan dropdown menggunakan UIListLayout untuk struktur yang benar
+- ✅ **Dropdown**: Dropdown sekarang muncul dengan benar saat diklik
+- ✅ **Auto-resize**: Container dan list menyesuaikan ukuran berdasarkan konten
+
+</details>
+
+<details>
+<summary><strong>v1.0.6</strong> - Dropdown Search</summary>
+
+- ✅ **Track User**: Pencarian dipindahkan ke dalam dropdown
+- ✅ **Bug Fix**: Perbaikan bug dropdown tidak muncul
+- ✅ **Filter**: Filter real-time saat mengetik di search box
+
+</details>
+
+<details>
+<summary><strong>v1.0.5</strong> - Horizontal Compass</summary>
+
+- ✅ **Track User**: Kompas horizontal di atas layar dengan arah mata angin dan derajat
+- ✅ **Triangle Indicator**: Triangle putih menunjukkan arah ke user yang di-track
+- ✅ **UI Detail**: Panel detail user dihapus untuk UI yang lebih minimalis
+
+</details>
+
+<details>
+<summary><strong>v1.0.4</strong> - Camera & Track User</summary>
+
+- ✅ **Camera User**: Navigasi POV dengan tombol kiri/kanan untuk switch user
+- ✅ **Track User**: Panah navigasi kompas + UI detail (jarak, lokasi, health)
+- ✅ **Fly**: 5 kecepatan (Sedang, Cepat, Sangat cepat, Super fast, Ultra fast)
+- ✅ **Checkpoint**: Deteksi via leaderstats + Model untuk kompatibilitas lebih baik
+- ✅ **Notifikasi**: Antre satu-satu untuk readability yang lebih baik
+
+</details>
+
+<details>
+<summary><strong>v1.0.3</strong> - Core Features</summary>
+
+- ✅ **Menu**: Players, Settings, Drone, Tracker, Utility, Info
+- ✅ **Notifikasi**: Koneksi join/left/respawn/checkpoint/damage (tanpa pindah area)
+- ✅ **Anti-AFK**: VirtualUser + nudge karakter untuk mencegah deteksi AFK
+- ✅ **Tracker**: Popup info minimalis untuk koneksi dan koneksi sama
+
+</details>
 
 ---
 
