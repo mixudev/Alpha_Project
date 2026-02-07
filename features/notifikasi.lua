@@ -19,11 +19,12 @@ local lastPos = {}
 local lastHealth = {}
 local lastCheckpointY = {}
 local lastCheckpointPart = {}
+local lastLeaderstats = {}
 local cachedCheckpointParts = {}
 local lastCheckpointScan = 0
 local CHECKPOINT_CACHE_INTERVAL = 3
-local CHECKPOINT_Y_STEP = 80
-local CHECKPOINT_NEAR_DIST = 22
+local CHECKPOINT_Y_STEP = 50
+local CHECKPOINT_NEAR_DIST = 85
 local DISPLAY_TIME = 4.5
 local GAP_BETWEEN_NOTIF = 0.5
 local notification_queue = {}
@@ -224,19 +225,27 @@ local function show_notification(title, text, icon)
     process_notification_queue()
 end
 
-local function is_checkpoint_part(part)
-    if not part or not part:IsA("BasePart") then return false end
-    local function name_has_keyword(str)
-        if not str or #str == 0 then return false end
-        local lower = str:gsub("%s+", ""):lower()
-        for _, kw in ipairs(CHECKPOINT_KEYWORDS) do
-            if lower:find(kw:lower(), 1, true) then return true end
-        end
-        return false
+local function name_has_checkpoint_keyword(str)
+    if not str or #str == 0 then return false end
+    local lower = str:gsub("%s+", ""):lower()
+    for _, kw in ipairs(CHECKPOINT_KEYWORDS) do
+        if lower:find(kw:lower(), 1, true) then return true end
     end
-    if name_has_keyword(part.Name) then return true end
-    if part.Parent and name_has_keyword(part.Parent.Name) then return true end
     return false
+end
+
+local function is_checkpoint_part(part)
+    if not part then return false end
+    if part:IsA("BasePart") or part:IsA("MeshPart") or part:IsA("UnionOperation") then
+        if name_has_checkpoint_keyword(part.Name) then return true end
+        if part.Parent and name_has_checkpoint_keyword(part.Parent.Name) then return true end
+    end
+    return false
+end
+
+local function is_checkpoint_model(obj)
+    if not obj or not obj:IsA("Model") then return false end
+    return name_has_checkpoint_keyword(obj.Name)
 end
 
 local function check_friends()
@@ -266,19 +275,48 @@ local function check_friends()
                 if t - lastCheckpointScan > CHECKPOINT_CACHE_INTERVAL then
                     cachedCheckpointParts = {}
                     for _, desc in pairs(Services.Workspace:GetDescendants()) do
-                        if desc:IsA("BasePart") and is_checkpoint_part(desc) then
+                        if is_checkpoint_part(desc) then
                             table.insert(cachedCheckpointParts, desc)
+                        elseif is_checkpoint_model(desc) then
+                            local posModel = nil
+                            local ok, pivot = pcall(function() return desc:GetPivot() end)
+                            if ok and pivot and pivot.Position then posModel = pivot.Position end
+                            if not posModel and desc.PrimaryPart then posModel = desc.PrimaryPart.Position end
+                            if not posModel then
+                                local ok2, cf, sz = pcall(function() return desc:GetBoundingBox() end)
+                                if ok2 and cf and cf.Position then posModel = cf.Position end
+                            end
+                            if posModel then
+                                table.insert(cachedCheckpointParts, { position = posModel, displayName = desc.Name or "Checkpoint", key = "M_" .. desc.Name .. tostring(desc) })
+                            end
                         end
                     end
                     lastCheckpointScan = t
                 end
-                for _, desc in ipairs(cachedCheckpointParts) do
-                    if desc.Parent and (pos - desc.Position).Magnitude <= CHECKPOINT_NEAR_DIST then
-                        local key = tostring(desc)
+                for _, item in ipairs(cachedCheckpointParts) do
+                    local checkPos = item.Position or (item.position)
+                    if checkPos and (pos - checkPos).Magnitude <= CHECKPOINT_NEAR_DIST then
+                        local key = item.key or tostring(item)
+                        local label = item.displayName or item.Name or "Checkpoint"
                         if not lastCheckpointPart[p] then lastCheckpointPart[p] = {} end
                         if not lastCheckpointPart[p][key] then
                             lastCheckpointPart[p][key] = true
-                            show_notification("Checkpoint", name .. " mencapai: " .. (desc.Name or "Checkpoint"), "🏁")
+                            show_notification("Checkpoint", name .. " mencapai: " .. label, "🏁")
+                        end
+                    end
+                end
+                -- Checkpoint via leaderstats (Stage, Level, Checkpoint, Zone, dll.)
+                local stats = p:FindFirstChild("leaderstats") or p:FindFirstChild("Leaderstats")
+                if stats then
+                    if not lastLeaderstats[p] then lastLeaderstats[p] = {} end
+                    for _, child in ipairs(stats:GetChildren()) do
+                        if (child:IsA("IntValue") or child:IsA("NumberValue")) and child.Name then
+                            local val = child.Value
+                            local last = lastLeaderstats[p][child.Name]
+                            if last ~= nil and val > last then
+                                show_notification("Checkpoint", name .. " " .. child.Name .. ": " .. tostring(last) .. " → " .. tostring(val), "🏁")
+                            end
+                            lastLeaderstats[p][child.Name] = val
                         end
                     end
                 end
@@ -297,12 +335,13 @@ local function check_friends()
             lastHealth[p] = nil
             lastCheckpointY[p] = nil
             lastCheckpointPart[p] = nil
+            lastLeaderstats[p] = nil
         end
     end
     for p, _ in pairs(lastPos) do
         local found = false
         for _, f in ipairs(friends) do if f == p then found = true break end end
-        if not found then lastPos[p] = nil lastHealth[p] = nil lastCheckpointY[p] = nil lastCheckpointPart[p] = nil end
+        if not found then lastPos[p] = nil lastHealth[p] = nil lastCheckpointY[p] = nil lastCheckpointPart[p] = nil lastLeaderstats[p] = nil end
     end
 end
 

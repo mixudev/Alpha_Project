@@ -409,8 +409,8 @@ local function load_all()
         flySpeedLayout.FillDirection = Enum.FillDirection.Horizontal
         flySpeedLayout.Padding = UDim.new(0, 8)
         flySpeedLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        local speedLabels = { "Sedang", "Cepat", "Sangat cepat" }
-        for i = 1, 3 do
+        local speedLabels = { "Sedang", "Cepat", "Sangat cepat", "Super fast", "Ultra fast" }
+        for i = 1, 5 do
             local btn = Instance.new("TextButton")
             btn.Parent = flySpeedRow
             btn.Size = UDim2.new(0, 0, 0, 28)
