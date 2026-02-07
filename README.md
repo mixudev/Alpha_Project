@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.8-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
+  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.9-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
   <img src="https://img.shields.io/badge/Roblox-Executor_%26_Local-00a396?style=for-the-badge&labelColor=0d1117" alt="Platform">
 </p>
 
@@ -187,6 +187,16 @@ Alpha_Project/
 <br>
 
 ## ▸ Rilis Tag
+
+<details>
+<summary><strong>v1.0.9</strong> - Track User & Fly Optimization</summary>
+
+- ✅ **Track User**: Dipindahkan dari Utility ke Players page, tombol "📍 Track" di sebelah tombol TP
+- ✅ **Fly**: Sistem fly diperbaiki dengan optimasi (throttle update, normalisasi vector, smooth velocity)
+- ✅ **Animasi Terbang**: Menggunakan `HumanoidStateType.Flying` untuk animasi terbang yang lebih natural
+- ✅ **Utility**: Track User dihapus dari Utility page untuk UI yang lebih bersih
+
+</details>
 
 <details>
 <summary><strong>v1.0.8</strong> - Close GUI & Social Media</summary>

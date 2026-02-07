@@ -10,6 +10,7 @@ local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") 
 local InfoPopup = (Alpha and Alpha.require) and Alpha.require("player/info_popup") or require(script.Parent:FindFirstChild("info_popup"))
 local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent.Parent:FindFirstChild("ui/components/button"))
 local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or require(script.Parent.Parent:FindFirstChild("utils/http"))
+local TrackUserFeature = (Alpha and Alpha.require) and Alpha.require("features/track_user") or require(script.Parent.Parent:FindFirstChild("features/track_user"))
 
 local PlayerList = {}
 
@@ -123,22 +124,26 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
     nameLabel.TextSize = 13
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    local infoBtn = ButtonComponent.new(playerFrame, "- Info -", UDim2.new(0.37, 5, 0.5, -16), function()
+    local infoBtn = ButtonComponent.new(playerFrame, "- Info -", UDim2.new(0.3, 5, 0.5, -16), function()
         InfoPopup.show(player)
     end)
-    infoBtn.Size = UDim2.new(0.2, -5, 0, 32)
-    local povBtn = ButtonComponent.new(playerFrame, "- POV -", UDim2.new(0.58, 5, 0.5, -16), function()
+    infoBtn.Size = UDim2.new(0.17, -5, 0, 32)
+    local povBtn = ButtonComponent.new(playerFrame, "- POV -", UDim2.new(0.48, 5, 0.5, -16), function()
         Spectate.start(player)
     end)
-    povBtn.Size = UDim2.new(0.2, -5, 0, 32)
-    local tpBtn = ButtonComponent.new(playerFrame, "🚀 TP", UDim2.new(0.79, 5, 0.5, -16), function()
+    povBtn.Size = UDim2.new(0.17, -5, 0, 32)
+    local tpBtn = ButtonComponent.new(playerFrame, "🚀 TP", UDim2.new(0.66, 5, 0.5, -16), function()
         local targetHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         local myHrp = Services.get_humanoid_root_part()
         if targetHrp and myHrp then
             myHrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
         end
     end)
-    tpBtn.Size = UDim2.new(0.2, -5, 0, 32)
+    tpBtn.Size = UDim2.new(0.17, -5, 0, 32)
+    local trackBtn = ButtonComponent.new(playerFrame, "📍 Track", UDim2.new(0.84, 5, 0.5, -16), function()
+        pcall(function() TrackUserFeature.start(player) end)
+    end)
+    trackBtn.Size = UDim2.new(0.17, -5, 0, 32)
 end
 
 -- ============================================
