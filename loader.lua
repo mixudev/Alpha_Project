@@ -701,6 +701,10 @@ local function load_all()
                 noResult.Text = "Tidak ada hasil"
                 noResult.TextColor3 = Config.colors.text_tertiary
                 noResult.TextSize = 12
+                local noResultPadding = Instance.new("UIPadding")
+                noResultPadding.Parent = noResult
+                noResultPadding.PaddingLeft = UDim.new(0, 10)
+                task.wait()
                 dropdownList.CanvasSize = UDim2.new(0, 0, 0, 40)
                 return
             end
@@ -734,32 +738,20 @@ local function load_all()
                 end)
             end
             
-            dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                dropdownList.CanvasSize = UDim2.new(0, 0, 0, dropdownLayout.AbsoluteContentSize.Y + 10)
-            end)
             task.wait()
             dropdownList.CanvasSize = UDim2.new(0, 0, 0, dropdownLayout.AbsoluteContentSize.Y + 10)
         end
         
         local function update_dropdown_size()
+            task.wait(0.1)
             local listHeight = math.min(150, dropdownLayout.AbsoluteContentSize.Y + 10)
             if listHeight < 40 then listHeight = 40 end
             dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
-            containerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Wait()
-            dropdownContainer.Size = UDim2.new(1, -20, 0, containerLayout.AbsoluteContentSize.Y)
+            task.wait(0.1)
+            local containerHeight = containerLayout.AbsoluteContentSize.Y
+            if containerHeight < 40 then containerHeight = 40 end
+            dropdownContainer.Size = UDim2.new(1, -20, 0, containerHeight)
         end
-        
-        containerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            if dropdownContainer.Visible then
-                update_dropdown_size()
-            end
-        end)
-        
-        dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            if dropdownContainer.Visible then
-                update_dropdown_size()
-            end
-        end)
         
         dropdownBtn.MouseButton1Click:Connect(function()
             update_players_list()
@@ -767,7 +759,6 @@ local function load_all()
             build_dropdown_list(filtered)
             dropdownContainer.Visible = not dropdownContainer.Visible
             if dropdownContainer.Visible then
-                task.wait()
                 update_dropdown_size()
             end
         end)
@@ -776,8 +767,9 @@ local function load_all()
             update_players_list()
             local filtered = filter_players(searchBox.Text)
             build_dropdown_list(filtered)
-            dropdownContainer.Visible = true
-            task.wait()
+            if not dropdownContainer.Visible then
+                dropdownContainer.Visible = true
+            end
             update_dropdown_size()
         end)
         
@@ -786,17 +778,18 @@ local function load_all()
                 update_players_list()
                 local filtered = filter_players(searchBox.Text)
                 build_dropdown_list(filtered)
-                task.wait()
                 update_dropdown_size()
             end
         end)
         
         searchBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed and dropdownContainer.Visible then
+            if enterPressed then
                 update_players_list()
                 local filtered = filter_players(searchBox.Text)
                 build_dropdown_list(filtered)
-                task.wait()
+                if not dropdownContainer.Visible then
+                    dropdownContainer.Visible = true
+                end
                 update_dropdown_size()
             end
         end)
