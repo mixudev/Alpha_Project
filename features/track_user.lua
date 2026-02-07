@@ -43,7 +43,7 @@ local function create_compass()
     
     local compassBar = Instance.new("Frame")
     compassBar.Parent = compassGui
-    compassBar.Size = UDim2.new(1, -40, 0, 60)
+    compassBar.Size = UDim2.new(1, -40, 0, 100)
     compassBar.Position = UDim2.new(0, 20, 0, 10)
     compassBar.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
     compassBar.BackgroundTransparency = 0.3
@@ -59,10 +59,56 @@ local function create_compass()
     compassStroke.Transparency = 0.5
     compassStroke.Parent = compassBar
     
+    -- Header with player name and close button
+    local header = Instance.new("Frame")
+    header.Parent = compassBar
+    header.BackgroundTransparency = 1
+    header.Size = UDim2.new(1, 0, 0, 24)
+    header.Position = UDim2.new(0, 0, 0, 0)
+    
+    local playerLabel = Instance.new("TextLabel")
+    playerLabel.Parent = header
+    playerLabel.BackgroundTransparency = 1
+    playerLabel.Size = UDim2.new(1, -40, 0, 24)
+    playerLabel.Position = UDim2.new(0, 15, 0, 0)
+    playerLabel.Font = Enum.Font.GothamBold
+    playerLabel.Text = trackedPlayer and (trackedPlayer.DisplayName or trackedPlayer.Name) or "Tracking..."
+    playerLabel.TextColor3 = Color3.fromRGB(0, 160, 145)
+    playerLabel.TextSize = 12
+    playerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Parent = header
+    closeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Size = UDim2.new(0, 28, 0, 28)
+    closeBtn.Position = UDim2.new(1, -32, 0.5, -14)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = Color3.fromRGB(200, 80, 80)
+    closeBtn.TextSize = 18
+    closeBtn.AutoButtonColor = false
+    
+    local closeBtnCorner = Instance.new("UICorner")
+    closeBtnCorner.CornerRadius = UDim.new(0, 6)
+    closeBtnCorner.Parent = closeBtn
+    
+    closeBtn.MouseButton1Click:Connect(function()
+        TrackUserFeature.stop()
+    end)
+    
+    closeBtn.MouseEnter:Connect(function()
+        closeBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 62)
+    end)
+    
+    closeBtn.MouseLeave:Connect(function()
+        closeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+    end)
+    
     local compassContent = Instance.new("Frame")
     compassContent.Parent = compassBar
-    compassContent.Size = UDim2.new(1, -20, 1, 0)
-    compassContent.Position = UDim2.new(0, 10, 0, 0)
+    compassContent.Size = UDim2.new(1, -20, 0, 60)
+    compassContent.Position = UDim2.new(0, 10, 0, 28)
     compassContent.BackgroundTransparency = 1
     compassContent.ClipsDescendants = true
     
@@ -102,6 +148,60 @@ local function create_compass()
     triangleBody.Position = UDim2.new(0.5, -1, 0, 5)
     triangleBody.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     triangleBody.BorderSizePixel = 0
+    
+    -- Center needle
+    local centerNeedle = Instance.new("Frame")
+    centerNeedle.Parent = compassContent
+    centerNeedle.Size = UDim2.new(0, 2, 0, 20)
+    centerNeedle.Position = UDim2.new(0.5, -1, 0.5, -10)
+    centerNeedle.BackgroundColor3 = Color3.fromRGB(0, 160, 145)
+    centerNeedle.BorderSizePixel = 0
+    
+    local needleCorner = Instance.new("UICorner")
+    needleCorner.CornerRadius = UDim.new(0, 1)
+    needleCorner.Parent = centerNeedle
+    
+    local centerDot = Instance.new("Frame")
+    centerDot.Parent = compassContent
+    centerDot.Size = UDim2.new(0, 8, 0, 8)
+    centerDot.Position = UDim2.new(0.5, -4, 0.5, -4)
+    centerDot.BackgroundColor3 = Color3.fromRGB(0, 160, 145)
+    centerDot.BorderSizePixel = 0
+    
+    local dotCorner = Instance.new("UICorner")
+    dotCorner.CornerRadius = UDim.new(0, 4)
+    dotCorner.Parent = centerDot
+    
+    -- Distance and position display
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Parent = compassBar
+    infoFrame.BackgroundTransparency = 1
+    infoFrame.Size = UDim2.new(1, 0, 0, 12)
+    infoFrame.Position = UDim2.new(0, 0, 1, -14)
+    
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Parent = infoFrame
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    distanceLabel.Position = UDim2.new(0, 10, 0, 0)
+    distanceLabel.Font = Enum.Font.Gotham
+    distanceLabel.Text = "Distance: — m"
+    distanceLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
+    distanceLabel.TextSize = 10
+    distanceLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local coordLabel = Instance.new("TextLabel")
+    coordLabel.Parent = infoFrame
+    coordLabel.BackgroundTransparency = 1
+    coordLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    coordLabel.Position = UDim2.new(0.5, 0, 0, 0)
+    coordLabel.Font = Enum.Font.Gotham
+    coordLabel.Text = "Pos: (0, 0, 0)"
+    coordLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
+    coordLabel.TextSize = 10
+    coordLabel.TextXAlignment = Enum.TextXAlignment.Right
+    coordLabel.Position = UDim2.new(0, 0, 0, 0)
+    coordLabel.Size = UDim2.new(1, -20, 1, 0)
     
     local markersContainer = Instance.new("Frame")
     markersContainer.Parent = compassContent
@@ -189,6 +289,13 @@ local function create_compass()
         finalX = math.clamp(finalX, 0, compassWidth)
         
         triangle.Position = UDim2.new(0, finalX - 6, 0, 0)
+        
+        -- Update distance and position
+        local distance = (myHrp.Position - hrp.Position).Magnitude
+        distanceLabel.Text = string.format("Distance: %.1f m", distance)
+        
+        local posX, posY, posZ = hrp.Position.X, hrp.Position.Y, hrp.Position.Z
+        coordLabel.Text = string.format("Pos: (%.0f, %.0f, %.0f)", posX, posY, posZ)
     end
     
     local function rebuild_markers()
@@ -238,52 +345,8 @@ local function create_compass()
         end
     end
     
-    local function update_compass_display()
-        if not trackedPlayer or not trackedPlayer.Character then
-            triangle.Visible = false
-            return
-        end
-        
-        local hrp = trackedPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            triangle.Visible = false
-            return
-        end
-        
-        local myHrp = Services.get_humanoid_root_part()
-        if not myHrp then
-            triangle.Visible = false
-            return
-        end
-        
-        triangle.Visible = true
-        local angle = get_direction_angle(myHrp.Position, hrp.Position)
-        angle = normalize_angle(angle)
-        
-        local camera = Services.Camera
-        local lookVector = camera.CFrame.LookVector
-        local camYaw = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
-        camYaw = normalize_angle(camYaw)
-        
-        local relativeAngle = normalize_angle(angle - camYaw)
-        if relativeAngle > 180 then
-            relativeAngle = relativeAngle - 360
-        end
-        
-        local visibleRange = 180
-        local offsetX = (relativeAngle / visibleRange) * compassWidth
-        local finalX = centerX + offsetX
-        
-        if math.abs(relativeAngle) <= visibleRange / 2 then
-            finalX = math.clamp(finalX, 0, compassWidth)
-            triangle.Position = UDim2.new(0, finalX - 5, 0, 0)
-            triangle.Visible = true
-        else
-            triangle.Visible = false
-        end
-    end
-    
     local lastRebuild = 0
+    local lastX = nil
     updateConn = Services.RunService.Heartbeat:Connect(function()
         local now = tick()
         if now - lastRebuild > 0.05 then

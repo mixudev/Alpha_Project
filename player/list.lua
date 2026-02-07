@@ -140,7 +140,7 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
         end
     end)
     tpBtn.Size = UDim2.new(0.17, -5, 0, 32)
-    local trackBtn = ButtonComponent.new(playerFrame, "📍 Track", UDim2.new(0.84, 5, 0.5, -16), function()
+    local trackBtn = ButtonComponent.new(playerFrame, "📍", UDim2.new(0.84, 5, 0.5, -16), function()
         pcall(function() TrackUserFeature.start(player) end)
     end)
     trackBtn.Size = UDim2.new(0.17, -5, 0, 32)

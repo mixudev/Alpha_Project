@@ -680,7 +680,7 @@ local function load_all()
         creatorBox.Parent = infoPage
         creatorBox.BackgroundColor3 = Settings.colors.bg_light
         creatorBox.BorderSizePixel = 0
-        creatorBox.Size = UDim2.new(1, -20, 0, 90)
+        creatorBox.Size = UDim2.new(1, -20, 0, 130)
         creatorBox.LayoutOrder = 1
         local creatorCorner = Instance.new("UICorner")
         creatorCorner.CornerRadius = UDim.new(0, Settings.sizes.corner_radius)
@@ -720,6 +720,115 @@ local function load_all()
         creatorRole.TextColor3 = Settings.colors.text_tertiary
         creatorRole.TextSize = 12
         creatorRole.TextXAlignment = Enum.TextXAlignment.Left
+        
+        -- Copy to clipboard helper
+        local function copy_to_clipboard(text)
+            local s = tostring(text)
+            local ok = pcall(function()
+                if setclipboard then setclipboard(s) return true end
+            end)
+            if not ok then
+                pcall(function()
+                    local uis = game:GetService("UserInputService")
+                    if uis and uis.SetClipboard then uis:SetClipboard(s) end
+                end)
+            end
+        end
+        
+        -- Discord button
+        local discordBtn = Instance.new("TextButton")
+        discordBtn.Parent = creatorBox
+        discordBtn.Size = UDim2.new(0.3, -5, 0, 28)
+        discordBtn.Position = UDim2.new(0, 15, 0, 76)
+        discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+        discordBtn.BorderSizePixel = 0
+        discordBtn.Font = Enum.Font.GothamBold
+        discordBtn.Text = "🔗 Discord"
+        discordBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        discordBtn.TextSize = 12
+        discordBtn.AutoButtonColor = false
+        local discordCorner = Instance.new("UICorner")
+        discordCorner.CornerRadius = UDim.new(0, 6)
+        discordCorner.Parent = discordBtn
+        discordBtn.MouseButton1Click:Connect(function()
+            local DiscordUrl = "https://discord.gg/your-discord-link"
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then
+                copy_to_clipboard(DiscordUrl)
+            else
+                pcall(function()
+                    game:GetService("GuiService"):BroadcastNotification({
+                        Title = "Discord",
+                        Text = "Link copied to clipboard! (Ctrl+Click to copy)"
+                    })
+                end)
+            end
+        end)
+        discordBtn.MouseEnter:Connect(function()
+            discordBtn.BackgroundColor3 = Color3.fromRGB(108, 121, 262)
+        end)
+        discordBtn.MouseLeave:Connect(function()
+            discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+        end)
+        
+        -- GitHub button
+        local githubBtn = Instance.new("TextButton")
+        githubBtn.Parent = creatorBox
+        githubBtn.Size = UDim2.new(0.3, -5, 0, 28)
+        githubBtn.Position = UDim2.new(0.35, 0, 0, 76)
+        githubBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        githubBtn.BorderSizePixel = 0
+        githubBtn.Font = Enum.Font.GothamBold
+        githubBtn.Text = "🔗 GitHub"
+        githubBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        githubBtn.TextSize = 12
+        githubBtn.AutoButtonColor = false
+        local githubCorner = Instance.new("UICorner")
+        githubCorner.CornerRadius = UDim.new(0, 6)
+        githubCorner.Parent = githubBtn
+        githubBtn.MouseButton1Click:Connect(function()
+            local GitHubUrl = "https://github.com/your-github-link"
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then
+                copy_to_clipboard(GitHubUrl)
+            else
+                pcall(function()
+                    game:GetService("GuiService"):BroadcastNotification({
+                        Title = "GitHub",
+                        Text = "Link copied to clipboard! (Ctrl+Click to copy)"
+                    })
+                end)
+            end
+        end)
+        githubBtn.MouseEnter:Connect(function()
+            githubBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+        end)
+        githubBtn.MouseLeave:Connect(function()
+            githubBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        end)
+        
+        -- Copy button
+        local copyBtn = Instance.new("TextButton")
+        copyBtn.Parent = creatorBox
+        copyBtn.Size = UDim2.new(0.3, 0, 0, 28)
+        copyBtn.Position = UDim2.new(0.7, 0, 0, 76)
+        copyBtn.BackgroundColor3 = Settings.colors.bg_medium
+        copyBtn.BorderSizePixel = 0
+        copyBtn.Font = Enum.Font.GothamBold
+        copyBtn.Text = "📋 Copy"
+        copyBtn.TextColor3 = Settings.colors.text_primary
+        copyBtn.TextSize = 12
+        copyBtn.AutoButtonColor = false
+        local copyCorner = Instance.new("UICorner")
+        copyCorner.CornerRadius = UDim.new(0, 6)
+        copyCorner.Parent = copyBtn
+        copyBtn.MouseButton1Click:Connect(function()
+            copy_to_clipboard("https://github.com/your-github-link")
+        end)
+        copyBtn.MouseEnter:Connect(function()
+            copyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+        end)
+        copyBtn.MouseLeave:Connect(function()
+            copyBtn.BackgroundColor3 = Settings.colors.bg_medium
+        end)
 
         Section.new(infoPage, "Detail Server", 2)
         add_info_row(infoPage, "User di Map", numPlayers .. " / " .. maxPlayers, 3)
@@ -742,19 +851,6 @@ local function load_all()
         add_info_row(infoPage, "Lingkungan", env, 9)
         if Lighting then
             add_info_row(infoPage, "Clock Time", string.format("%.1f", Lighting.ClockTime or 0), 10)
-        end
-        -- Tombol Copy (Place ID, Job ID)
-        local function copy_to_clipboard(text)
-            local s = tostring(text)
-            local ok = pcall(function()
-                if setclipboard then setclipboard(s) return true end
-            end)
-            if not ok then
-                pcall(function()
-                    local uis = game:GetService("UserInputService")
-                    if uis and uis.SetClipboard then uis:SetClipboard(s) end
-                end)
-            end
         end
         local copyRow = Instance.new("Frame")
         copyRow.Parent = infoPage
