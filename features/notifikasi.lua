@@ -1,6 +1,6 @@
 --[[
     Alpha Project - Notifikasi Koneksi
-    Popup notifikasi: koneksi join, koneksi sama join/sudah di map, pindah area, nyawa, dll.
+    Popup notifikasi: koneksi join, koneksi sama join/sudah di map, checkpoint, nyawa, dll.
 ]]
 
 local Alpha = rawget(_G, "Alpha")
@@ -22,7 +22,6 @@ local lastCheckpointPart = {}
 local cachedCheckpointParts = {}
 local lastCheckpointScan = 0
 local CHECKPOINT_CACHE_INTERVAL = 4
-local MOVE_THRESHOLD = 45
 local CHECKPOINT_Y_STEP = 80
 local CHECKPOINT_NEAR_DIST = 14
 local DISPLAY_TIME = 4.5
@@ -223,9 +222,6 @@ local function check_friends()
             local pos = hrp and hrp.Position or nil
             local health = hum and hum.Health or nil
             local name = p.DisplayName or p.Name
-            if lastPos[p] and pos and (pos - lastPos[p]).Magnitude > MOVE_THRESHOLD then
-                show_notification("Koneksi pindah", name .. " pindah ke area baru", "📍")
-            end
             if pos and pos.Y then
                 local lastY = lastCheckpointY[p] or pos.Y
                 if pos.Y - lastY >= CHECKPOINT_Y_STEP then
@@ -327,7 +323,7 @@ local function enable()
             lastCheckpointY[p] = nil
             lastCheckpointPart[p] = nil
         end)
-        show_notification("Allert Active", "Notifikasi akan ditampilkan disini, join/left, checkpoint, damage & pindah area", "🔔")
+        show_notification("Koneksi: Masuk server", "Notifikasi koneksi aktif. Join/left, checkpoint, damage akan ditampilkan di sini.", "🔔")
         -- Koneksi di map / koneksi sama di map — tampilkan selalu (dengan retry jika belum ada data)
         local function show_koneksi_di_map()
             if not Settings.features.notifikasiEnabled then return end
