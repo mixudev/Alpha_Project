@@ -2,7 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
-    Version: 1.0.4
+    Version: 1.0.5
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -554,24 +554,208 @@ local function load_all()
         end)
 
         Section.new(utilityPage, "📍 Track User", 10)
-        local trackPlayerSelect = Instance.new("TextButton")
-        trackPlayerSelect.Parent = utilityPage
-        trackPlayerSelect.LayoutOrder = 11
-        trackPlayerSelect.Size = UDim2.new(1, -20, 0, 36)
-        trackPlayerSelect.BackgroundColor3 = Config.colors.bg_light
-        trackPlayerSelect.BorderSizePixel = 0
-        trackPlayerSelect.Font = Enum.Font.Gotham
-        trackPlayerSelect.Text = "Pilih User..."
-        trackPlayerSelect.TextColor3 = Config.colors.text_secondary
-        trackPlayerSelect.TextSize = 12
-        trackPlayerSelect.AutoButtonColor = false
-        local trackSelectCorner = Instance.new("UICorner")
-        trackSelectCorner.CornerRadius = UDim.new(0, 6)
-        trackSelectCorner.Parent = trackPlayerSelect
+        
+        local searchRow = Instance.new("Frame")
+        searchRow.Parent = utilityPage
+        searchRow.LayoutOrder = 11
+        searchRow.Size = UDim2.new(1, -20, 0, 36)
+        searchRow.BackgroundTransparency = 1
+        
+        local searchBox = Instance.new("TextBox")
+        searchBox.Parent = searchRow
+        searchBox.Size = UDim2.new(1, -50, 1, 0)
+        searchBox.Position = UDim2.new(0, 0, 0, 0)
+        searchBox.BackgroundColor3 = Config.colors.bg_light
+        searchBox.BorderSizePixel = 0
+        searchBox.Font = Enum.Font.Gotham
+        searchBox.PlaceholderText = "Cari username..."
+        searchBox.Text = ""
+        searchBox.TextColor3 = Config.colors.text_primary
+        searchBox.TextSize = 12
+        searchBox.TextXAlignment = Enum.TextXAlignment.Left
+        local searchCorner = Instance.new("UICorner")
+        searchCorner.CornerRadius = UDim.new(0, 6)
+        searchCorner.Parent = searchBox
+        local searchPadding = Instance.new("UIPadding")
+        searchPadding.Parent = searchBox
+        searchPadding.PaddingLeft = UDim.new(0, 10)
+        
+        local searchBtn = Instance.new("TextButton")
+        searchBtn.Parent = searchRow
+        searchBtn.Size = UDim2.new(0, 46, 1, 0)
+        searchBtn.Position = UDim2.new(1, -46, 0, 0)
+        searchBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
+        searchBtn.BorderSizePixel = 0
+        searchBtn.Font = Enum.Font.GothamBold
+        searchBtn.Text = "🔍"
+        searchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        searchBtn.TextSize = 14
+        searchBtn.AutoButtonColor = false
+        local searchBtnCorner = Instance.new("UICorner")
+        searchBtnCorner.CornerRadius = UDim.new(0, 6)
+        searchBtnCorner.Parent = searchBtn
+        
+        local dropdownFrame = Instance.new("Frame")
+        dropdownFrame.Parent = utilityPage
+        dropdownFrame.LayoutOrder = 12
+        dropdownFrame.Size = UDim2.new(1, -20, 0, 36)
+        dropdownFrame.BackgroundColor3 = Config.colors.bg_light
+        dropdownFrame.BorderSizePixel = 0
+        local dropdownCorner = Instance.new("UICorner")
+        dropdownCorner.CornerRadius = UDim.new(0, 6)
+        dropdownCorner.Parent = dropdownFrame
+        
+        local dropdownBtn = Instance.new("TextButton")
+        dropdownBtn.Parent = dropdownFrame
+        dropdownBtn.Size = UDim2.new(1, -40, 1, 0)
+        dropdownBtn.Position = UDim2.new(0, 0, 0, 0)
+        dropdownBtn.BackgroundTransparency = 1
+        dropdownBtn.Font = Enum.Font.Gotham
+        dropdownBtn.Text = "Pilih User..."
+        dropdownBtn.TextColor3 = Config.colors.text_secondary
+        dropdownBtn.TextSize = 12
+        dropdownBtn.TextXAlignment = Enum.TextXAlignment.Left
+        dropdownBtn.AutoButtonColor = false
+        local dropdownPadding = Instance.new("UIPadding")
+        dropdownPadding.Parent = dropdownBtn
+        dropdownPadding.PaddingLeft = UDim.new(0, 10)
+        
+        local dropdownArrow = Instance.new("TextLabel")
+        dropdownArrow.Parent = dropdownFrame
+        dropdownArrow.Size = UDim2.new(0, 30, 1, 0)
+        dropdownArrow.Position = UDim2.new(1, -30, 0, 0)
+        dropdownArrow.BackgroundTransparency = 1
+        dropdownArrow.Font = Enum.Font.GothamBold
+        dropdownArrow.Text = "▼"
+        dropdownArrow.TextColor3 = Config.colors.text_tertiary
+        dropdownArrow.TextSize = 12
+        
+        local dropdownList = Instance.new("ScrollingFrame")
+        dropdownList.Parent = utilityPage
+        dropdownList.LayoutOrder = 13
+        dropdownList.Size = UDim2.new(1, -20, 0, 0)
+        dropdownList.Position = UDim2.new(0, 10, 0, 0)
+        dropdownList.BackgroundColor3 = Config.colors.bg_light
+        dropdownList.BorderSizePixel = 0
+        dropdownList.Visible = false
+        dropdownList.ScrollBarThickness = 4
+        local dropdownListCorner = Instance.new("UICorner")
+        dropdownListCorner.CornerRadius = UDim.new(0, 6)
+        dropdownListCorner.Parent = dropdownList
+        
+        local dropdownLayout = Instance.new("UIListLayout")
+        dropdownLayout.Parent = dropdownList
+        dropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        
+        local selectedTrackPlayer = nil
+        local allPlayers = {}
+        
+        local function update_players_list()
+            allPlayers = {}
+            for _, p in ipairs(CoreServices.Players:GetPlayers()) do
+                if p ~= CoreServices.Players.LocalPlayer then
+                    table.insert(allPlayers, p)
+                end
+            end
+        end
+        
+        local function filter_players(searchText)
+            if not searchText or searchText == "" then
+                return allPlayers
+            end
+            local filtered = {}
+            local lowerSearch = string.lower(searchText)
+            for _, p in ipairs(allPlayers) do
+                local name = string.lower(p.Name)
+                local displayName = string.lower(p.DisplayName or "")
+                if string.find(name, lowerSearch, 1, true) or string.find(displayName, lowerSearch, 1, true) then
+                    table.insert(filtered, p)
+                end
+            end
+            return filtered
+        end
+        
+        local function build_dropdown_list(filteredPlayers)
+            dropdownList:ClearAllChildren()
+            dropdownLayout.Parent = dropdownList
+            
+            if #filteredPlayers == 0 then
+                local noResult = Instance.new("TextLabel")
+                noResult.Parent = dropdownList
+                noResult.Size = UDim2.new(1, -20, 0, 30)
+                noResult.Position = UDim2.new(0, 10, 0, 5)
+                noResult.BackgroundTransparency = 1
+                noResult.Font = Enum.Font.Gotham
+                noResult.Text = "Tidak ada hasil"
+                noResult.TextColor3 = Config.colors.text_tertiary
+                noResult.TextSize = 12
+                dropdownList.CanvasSize = UDim2.new(0, 0, 0, 40)
+                return
+            end
+            
+            for i, p in ipairs(filteredPlayers) do
+                local item = Instance.new("TextButton")
+                item.Parent = dropdownList
+                item.Size = UDim2.new(1, -20, 0, 32)
+                item.Position = UDim2.new(0, 10, 0, (i - 1) * 34 + 5)
+                item.BackgroundColor3 = (p == selectedTrackPlayer) and Color3.fromRGB(0, 100, 80) or Config.colors.bg_light
+                item.BorderSizePixel = 0
+                item.Font = Enum.Font.Gotham
+                item.Text = (p.DisplayName or p.Name) .. " (@" .. p.Name .. ")"
+                item.TextColor3 = Config.colors.text_primary
+                item.TextSize = 12
+                item.TextXAlignment = Enum.TextXAlignment.Left
+                item.AutoButtonColor = false
+                local itemCorner = Instance.new("UICorner")
+                itemCorner.CornerRadius = UDim.new(0, 4)
+                itemCorner.Parent = item
+                local itemPadding = Instance.new("UIPadding")
+                itemPadding.Parent = item
+                itemPadding.PaddingLeft = UDim.new(0, 10)
+                
+                item.MouseButton1Click:Connect(function()
+                    selectedTrackPlayer = p
+                    dropdownBtn.Text = (p.DisplayName or p.Name) .. " (@" .. p.Name .. ")"
+                    dropdownBtn.TextColor3 = Config.colors.text_primary
+                    dropdownList.Visible = false
+                    searchBox.Text = ""
+                end)
+            end
+            
+            dropdownList.CanvasSize = UDim2.new(0, 0, 0, #filteredPlayers * 34 + 10)
+        end
+        
+        dropdownBtn.MouseButton1Click:Connect(function()
+            update_players_list()
+            local filtered = filter_players(searchBox.Text)
+            build_dropdown_list(filtered)
+            dropdownList.Visible = not dropdownList.Visible
+            if dropdownList.Visible then
+                dropdownList.Size = UDim2.new(1, -20, 0, math.min(150, #filtered * 34 + 10))
+            end
+        end)
+        
+        searchBtn.MouseButton1Click:Connect(function()
+            update_players_list()
+            local filtered = filter_players(searchBox.Text)
+            build_dropdown_list(filtered)
+            dropdownList.Visible = true
+            dropdownList.Size = UDim2.new(1, -20, 0, math.min(150, #filtered * 34 + 10))
+        end)
+        
+        searchBox.FocusLost:Connect(function(enterPressed)
+            if enterPressed then
+                update_players_list()
+                local filtered = filter_players(searchBox.Text)
+                build_dropdown_list(filtered)
+                dropdownList.Visible = true
+                dropdownList.Size = UDim2.new(1, -20, 0, math.min(150, #filtered * 34 + 10))
+            end
+        end)
         
         local trackBtn = Instance.new("TextButton")
         trackBtn.Parent = utilityPage
-        trackBtn.LayoutOrder = 12
+        trackBtn.LayoutOrder = 14
         trackBtn.Size = UDim2.new(1, -20, 0, 36)
         trackBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
         trackBtn.BorderSizePixel = 0
@@ -586,7 +770,7 @@ local function load_all()
         
         local stopTrackBtn = Instance.new("TextButton")
         stopTrackBtn.Parent = utilityPage
-        stopTrackBtn.LayoutOrder = 13
+        stopTrackBtn.LayoutOrder = 15
         stopTrackBtn.Size = UDim2.new(1, -20, 0, 36)
         stopTrackBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
         stopTrackBtn.BorderSizePixel = 0
@@ -598,32 +782,6 @@ local function load_all()
         local stopTrackCorner = Instance.new("UICorner")
         stopTrackCorner.CornerRadius = UDim.new(0, 6)
         stopTrackCorner.Parent = stopTrackBtn
-        
-        local selectedTrackPlayer = nil
-        
-        trackPlayerSelect.MouseButton1Click:Connect(function()
-            local players = {}
-            for _, p in ipairs(CoreServices.Players:GetPlayers()) do
-                if p ~= CoreServices.Players.LocalPlayer then
-                    table.insert(players, p)
-                end
-            end
-            if #players == 0 then
-                trackPlayerSelect.Text = "Tidak ada player"
-                return
-            end
-            local currentIdx = 1
-            for i, p in ipairs(players) do
-                if p == selectedTrackPlayer then
-                    currentIdx = i
-                    break
-                end
-            end
-            currentIdx = currentIdx + 1
-            if currentIdx > #players then currentIdx = 1 end
-            selectedTrackPlayer = players[currentIdx]
-            trackPlayerSelect.Text = (selectedTrackPlayer.DisplayName or selectedTrackPlayer.Name) .. " (@" .. selectedTrackPlayer.Name .. ")"
-        end)
         
         trackBtn.MouseButton1Click:Connect(function()
             if selectedTrackPlayer then
@@ -897,7 +1055,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
-    print("📌 Version: 1.0.4")
+    print("📌 Version: 1.0.5")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     

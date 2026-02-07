@@ -1,7 +1,6 @@
 --[[
     Alpha Project - Track User
-    Panah navigasi (kompas) di atas untuk mengarahkan ke user yang di-track.
-    UI detail: username, jarak, lokasi, dll.
+    Kompas horizontal di atas untuk mengarahkan ke user yang di-track.
 ]]
 
 local Alpha = rawget(_G, "Alpha")
@@ -12,24 +11,25 @@ local TrackUserFeature = {}
 
 local trackedPlayer = nil
 local compassGui = nil
-local detailGui = nil
 local updateConn = nil
 
-local function get_distance(pos1, pos2)
-    if not pos1 or not pos2 then return 0 end
-    return math.floor((pos1 - pos2).Magnitude)
-end
-
-local function get_direction(from, to)
+local function get_direction_angle(from, to)
     if not from or not to then return 0 end
     local camera = Services.Camera
     local camCF = camera.CFrame
     local toTarget = (to - from)
-    local toTargetCF = CFrame.lookAt(Vector3.new(0, 0, 0), toTarget)
-    local relativeCF = camCF:ToObjectSpace(toTargetCF)
-    local _, _, _, _, _, _, _, _, _, _, _, m12, m13 = relativeCF:GetComponents()
-    local angle = math.atan2(m13, m12)
-    return math.deg(angle)
+    local forward = camCF.LookVector
+    local right = camCF.RightVector
+    local relativeRight = toTarget:Dot(right)
+    local relativeForward = toTarget:Dot(forward)
+    local angle = math.deg(math.atan2(relativeRight, relativeForward))
+    return angle
+end
+
+local function normalize_angle(angle)
+    while angle < 0 do angle = angle + 360 end
+    while angle >= 360 do angle = angle - 360 end
+    return angle
 end
 
 local function create_compass()
@@ -41,277 +41,262 @@ local function create_compass()
     compassGui.DisplayOrder = 149
     compassGui.ResetOnSpawn = false
     
-    local compassFrame = Instance.new("Frame")
-    compassFrame.Parent = compassGui
-    compassFrame.Size = UDim2.new(0, 200, 0, 200)
-    compassFrame.Position = UDim2.new(0.5, -100, 0, 20)
-    compassFrame.BackgroundTransparency = 1
+    local compassBar = Instance.new("Frame")
+    compassBar.Parent = compassGui
+    compassBar.Size = UDim2.new(1, -40, 0, 60)
+    compassBar.Position = UDim2.new(0, 20, 0, 10)
+    compassBar.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+    compassBar.BackgroundTransparency = 0.3
+    compassBar.BorderSizePixel = 0
     
-    local compassBg = Instance.new("ImageLabel")
-    compassBg.Parent = compassFrame
-    compassBg.Size = UDim2.new(1, 0, 1, 0)
-    compassBg.BackgroundTransparency = 1
-    compassBg.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-    compassBg.ImageTransparency = 1
+    local compassCorner = Instance.new("UICorner")
+    compassCorner.CornerRadius = UDim.new(0, 8)
+    compassCorner.Parent = compassBar
     
-    local compassCircle = Instance.new("Frame")
-    compassCircle.Parent = compassFrame
-    compassCircle.Size = UDim2.new(0, 180, 0, 180)
-    compassCircle.Position = UDim2.new(0.5, -90, 0.5, -90)
-    compassCircle.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
-    compassCircle.BorderSizePixel = 0
-    local circleCorner = Instance.new("UICorner")
-    circleCorner.CornerRadius = UDim.new(0, 90)
-    circleCorner.Parent = compassCircle
-    local circleStroke = Instance.new("UIStroke")
-    circleStroke.Color = Color3.fromRGB(0, 160, 145)
-    circleStroke.Thickness = 3
-    circleStroke.Transparency = 0.2
-    circleStroke.Parent = compassCircle
+    local compassStroke = Instance.new("UIStroke")
+    compassStroke.Color = Color3.fromRGB(0, 160, 145)
+    compassStroke.Thickness = 2
+    compassStroke.Transparency = 0.5
+    compassStroke.Parent = compassBar
     
-    local arrow = Instance.new("Frame")
-    arrow.Name = "Arrow"
-    arrow.Parent = compassFrame
-    arrow.Size = UDim2.new(0, 0, 0, 0)
-    arrow.BackgroundTransparency = 1
-    arrow.AnchorPoint = Vector2.new(0.5, 0.5)
-    arrow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    local compassContent = Instance.new("Frame")
+    compassContent.Parent = compassBar
+    compassContent.Size = UDim2.new(1, -20, 1, 0)
+    compassContent.Position = UDim2.new(0, 10, 0, 0)
+    compassContent.BackgroundTransparency = 1
+    compassContent.ClipsDescendants = true
     
-    local arrowBody = Instance.new("Frame")
-    arrowBody.Parent = arrow
-    arrowBody.Size = UDim2.new(0, 6, 0, 50)
-    arrowBody.Position = UDim2.new(0.5, -3, 0.5, -25)
-    arrowBody.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    arrowBody.BorderSizePixel = 0
-    local arrowBodyCorner = Instance.new("UICorner")
-    arrowBodyCorner.CornerRadius = UDim.new(0, 3)
-    arrowBodyCorner.Parent = arrowBody
+    local centerIndicator = Instance.new("Frame")
+    centerIndicator.Name = "CenterIndicator"
+    centerIndicator.Parent = compassContent
+    centerIndicator.Size = UDim2.new(0, 0, 0, 0)
+    centerIndicator.BackgroundTransparency = 1
+    centerIndicator.AnchorPoint = Vector2.new(0.5, 0)
+    centerIndicator.Position = UDim2.new(0.5, 0, 0, 0)
     
-    local arrowHead = Instance.new("Frame")
-    arrowHead.Parent = arrow
-    arrowHead.Size = UDim2.new(0, 0, 0, 0)
-    arrowHead.BackgroundTransparency = 1
-    arrowHead.AnchorPoint = Vector2.new(0.5, 0.5)
-    arrowHead.Position = UDim2.new(0.5, 0, 0.5, -50)
+    local triangle = Instance.new("Frame")
+    triangle.Parent = centerIndicator
+    triangle.Size = UDim2.new(0, 0, 0, 0)
+    triangle.BackgroundTransparency = 1
+    triangle.AnchorPoint = Vector2.new(0.5, 0)
+    triangle.Position = UDim2.new(0.5, 0, 0, 0)
     
-    local arrowHead1 = Instance.new("Frame")
-    arrowHead1.Parent = arrowHead
-    arrowHead1.Size = UDim2.new(0, 20, 0, 20)
-    arrowHead1.Position = UDim2.new(0.5, -10, 0.5, -10)
-    arrowHead1.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    arrowHead1.BorderSizePixel = 0
-    arrowHead1.Rotation = 45
+    local triangleShape = Instance.new("Frame")
+    triangleShape.Parent = triangle
+    triangleShape.Size = UDim2.new(0, 0, 0, 0)
+    triangleShape.BackgroundTransparency = 1
+    triangleShape.AnchorPoint = Vector2.new(0.5, 0)
+    triangleShape.Position = UDim2.new(0.5, 0, 0, 0)
     
-    local function create_marker(text, angle)
+    local triangleTop = Instance.new("Frame")
+    triangleTop.Parent = triangleShape
+    triangleTop.Size = UDim2.new(0, 10, 0, 10)
+    triangleTop.Position = UDim2.new(0.5, -5, 0, 0)
+    triangleTop.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    triangleTop.BorderSizePixel = 0
+    triangleTop.Rotation = 45
+    
+    local triangleBody = Instance.new("Frame")
+    triangleBody.Parent = triangleShape
+    triangleBody.Size = UDim2.new(0, 2, 0, 8)
+    triangleBody.Position = UDim2.new(0.5, -1, 0, 5)
+    triangleBody.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    triangleBody.BorderSizePixel = 0
+    
+    local markersContainer = Instance.new("Frame")
+    markersContainer.Parent = compassContent
+    markersContainer.Size = UDim2.new(1, 0, 1, 0)
+    markersContainer.BackgroundTransparency = 1
+    
+    local function create_tick(x, isMajor)
+        local tick = Instance.new("Frame")
+        tick.Parent = markersContainer
+        tick.Size = UDim2.new(0, isMajor and 2 or 1, 0, isMajor and 12 or 6)
+        tick.Position = UDim2.new(0, x - (isMajor and 1 or 0.5), 0, isMajor and 0 or 6)
+        tick.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        tick.BorderSizePixel = 0
+        tick.BackgroundTransparency = 0.3
+    end
+    
+    local function create_marker(text, x, isCardinal)
         local marker = Instance.new("TextLabel")
-        marker.Parent = compassCircle
-        marker.Size = UDim2.new(0, 20, 0, 20)
+        marker.Parent = markersContainer
+        marker.Size = UDim2.new(0, 30, 0, 20)
+        marker.Position = UDim2.new(0, x - 15, 0, 15)
         marker.BackgroundTransparency = 1
         marker.Font = Enum.Font.GothamBold
         marker.Text = text
         marker.TextColor3 = Color3.fromRGB(255, 255, 255)
-        marker.TextSize = 14
-        local rad = math.rad(angle)
-        local radius = 70
-        marker.Position = UDim2.new(0.5, math.sin(rad) * radius - 10, 0.5, -math.cos(rad) * radius - 10)
-        return marker
+        marker.TextSize = isCardinal and 14 or 11
+        marker.TextXAlignment = Enum.TextXAlignment.Center
     end
     
-    create_marker("N", 0)
-    create_marker("E", 90)
-    create_marker("S", 180)
-    create_marker("W", 270)
+    local compassWidth = compassContent.AbsoluteSize.X
+    local centerX = compassWidth / 2
     
-    local function update_arrow()
+    local cardinals = {
+        {text = "N", angle = 0},
+        {text = "NE", angle = 45},
+        {text = "E", angle = 90},
+        {text = "SE", angle = 135},
+        {text = "S", angle = 180},
+        {text = "SW", angle = 225},
+        {text = "W", angle = 270},
+        {text = "NW", angle = 315}
+    }
+    
+    local degrees = {}
+    for i = 0, 360, 15 do
+        table.insert(degrees, i)
+    end
+    
+    local function update_compass_display()
         if not trackedPlayer or not trackedPlayer.Character then
-            arrow.Visible = false
+            triangle.Visible = false
             return
         end
+        
         local hrp = trackedPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then
-            arrow.Visible = false
+            triangle.Visible = false
             return
         end
+        
         local myHrp = Services.get_humanoid_root_part()
         if not myHrp then
-            arrow.Visible = false
+            triangle.Visible = false
             return
         end
         
-        arrow.Visible = true
+        triangle.Visible = true
+        local angle = get_direction_angle(myHrp.Position, hrp.Position)
+        angle = normalize_angle(angle)
+        
         local camera = Services.Camera
-        local camCF = camera.CFrame
-        local toTarget = (hrp.Position - myHrp.Position)
-        local forward = camCF.LookVector
-        local right = camCF.RightVector
-        local up = camCF.UpVector
-        local relativeRight = toTarget:Dot(right)
-        local relativeForward = toTarget:Dot(forward)
-        local angle = math.deg(math.atan2(relativeRight, relativeForward))
-        arrow.Rotation = angle
-    end
-    
-    updateConn = Services.RunService.Heartbeat:Connect(function()
-        if trackedPlayer then update_arrow() end
-    end)
-    
-    update_arrow()
-end
-
-local function create_detail_ui()
-    if detailGui then detailGui:Destroy() end
-    
-    detailGui = Instance.new("ScreenGui")
-    detailGui.Name = "AlphaTrackDetail"
-    detailGui.Parent = Services.CoreGui
-    detailGui.DisplayOrder = 148
-    detailGui.ResetOnSpawn = false
-    
-    local detailFrame = Instance.new("Frame")
-    detailFrame.Parent = detailGui
-    detailFrame.Size = UDim2.new(0, 320, 0, 180)
-    detailFrame.Position = UDim2.new(1, -340, 0, 20)
-    detailFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
-    detailFrame.BorderSizePixel = 0
-    
-    local detailCorner = Instance.new("UICorner")
-    detailCorner.CornerRadius = UDim.new(0, 12)
-    detailCorner.Parent = detailFrame
-    
-    local detailStroke = Instance.new("UIStroke")
-    detailStroke.Color = Color3.fromRGB(0, 160, 145)
-    detailStroke.Thickness = 2
-    detailStroke.Transparency = 0.3
-    detailStroke.Parent = detailFrame
-    
-    local header = Instance.new("Frame")
-    header.Parent = detailFrame
-    header.Size = UDim2.new(1, 0, 0, 50)
-    header.BackgroundColor3 = Color3.fromRGB(15, 17, 22)
-    header.BorderSizePixel = 0
-    local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = UDim.new(0, 12)
-    headerCorner.Parent = header
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Parent = header
-    titleLabel.Size = UDim2.new(1, -20, 0, 30)
-    titleLabel.Position = UDim2.new(0, 10, 0, 8)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = "📍 Tracking User"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 16
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Parent = header
-    closeBtn.Size = UDim2.new(0, 28, 0, 28)
-    closeBtn.Position = UDim2.new(1, -36, 0, 11)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(50, 40, 40)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Text = "×"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 18
-    closeBtn.AutoButtonColor = false
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeBtn
-    closeBtn.MouseButton1Click:Connect(function()
-        TrackUserFeature.stop()
-    end)
-    
-    local content = Instance.new("ScrollingFrame")
-    content.Parent = detailFrame
-    content.Size = UDim2.new(1, -20, 1, -60)
-    content.Position = UDim2.new(0, 10, 0, 55)
-    content.BackgroundTransparency = 1
-    content.BorderSizePixel = 0
-    content.ScrollBarThickness = 4
-    
-    local contentLayout = Instance.new("UIListLayout")
-    contentLayout.Parent = content
-    contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.Padding = UDim.new(0, 8)
-    
-    local function create_info_row(label, value, order)
-        local row = Instance.new("Frame")
-        row.Parent = content
-        row.LayoutOrder = order
-        row.Size = UDim2.new(1, 0, 0, 24)
-        row.BackgroundTransparency = 1
+        local camYaw = math.deg(math.atan2(-camera.CFrame.LookVector.X, -camera.CFrame.LookVector.Z))
+        camYaw = normalize_angle(camYaw)
         
-        local labelLbl = Instance.new("TextLabel")
-        labelLbl.Parent = row
-        labelLbl.Size = UDim2.new(0.4, 0, 1, 0)
-        labelLbl.BackgroundTransparency = 1
-        labelLbl.Font = Enum.Font.Gotham
-        labelLbl.Text = label .. ":"
-        labelLbl.TextColor3 = Color3.fromRGB(180, 185, 200)
-        labelLbl.TextSize = 12
-        labelLbl.TextXAlignment = Enum.TextXAlignment.Left
+        local relativeAngle = normalize_angle(angle - camYaw)
+        local offsetX = (relativeAngle / 360) * compassWidth
         
-        local valueLbl = Instance.new("TextLabel")
-        valueLbl.Name = "Value"
-        valueLbl.Parent = row
-        valueLbl.Size = UDim2.new(0.6, 0, 1, 0)
-        valueLbl.Position = UDim2.new(0.4, 0, 0, 0)
-        valueLbl.BackgroundTransparency = 1
-        valueLbl.Font = Enum.Font.GothamBold
-        valueLbl.Text = value or "—"
-        valueLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        valueLbl.TextSize = 12
-        valueLbl.TextXAlignment = Enum.TextXAlignment.Left
-        
-        return valueLbl
-    end
-    
-    local nameRow = create_info_row("Nama", "", 1)
-    local userRow = create_info_row("Username", "", 2)
-    local distRow = create_info_row("Jarak", "", 3)
-    local posRow = create_info_row("Lokasi", "", 4)
-    local healthRow = create_info_row("Health", "", 5)
-    
-    local function update_detail()
-        if not trackedPlayer or not trackedPlayer.Character then
-            nameRow.Text = "—"
-            userRow.Text = "—"
-            distRow.Text = "—"
-            posRow.Text = "—"
-            healthRow.Text = "—"
-            return
+        if offsetX > compassWidth / 2 then
+            offsetX = offsetX - compassWidth
+        elseif offsetX < -compassWidth / 2 then
+            offsetX = offsetX + compassWidth
         end
         
-        nameRow.Text = trackedPlayer.DisplayName or trackedPlayer.Name
-        userRow.Text = "@" .. trackedPlayer.Name
+        local finalX = centerX + offsetX
+        finalX = math.clamp(finalX, 0, compassWidth)
+        
+        triangle.Position = UDim2.new(0, finalX - 6, 0, 0)
+    end
+    
+    local function rebuild_markers()
+        markersContainer:ClearAllChildren()
+        
+        compassWidth = compassContent.AbsoluteSize.X
+        centerX = compassWidth / 2
+        
+        local camera = Services.Camera
+        local lookVector = camera.CFrame.LookVector
+        local camYaw = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
+        camYaw = normalize_angle(camYaw)
+        
+        local visibleRange = 180
+        local startAngle = normalize_angle(camYaw - visibleRange / 2)
+        local endAngle = normalize_angle(camYaw + visibleRange / 2)
+        
+        for _, deg in ipairs(degrees) do
+            local worldAngle = normalize_angle(deg)
+            local relativeAngle = normalize_angle(worldAngle - camYaw)
+            
+            if relativeAngle > 180 then
+                relativeAngle = relativeAngle - 360
+            end
+            
+            if math.abs(relativeAngle) <= visibleRange / 2 then
+                local x = centerX + (relativeAngle / visibleRange) * compassWidth
+                
+                local isMajor = (deg % 45 == 0)
+                create_tick(x, isMajor)
+                
+                if isMajor then
+                    local cardText = ""
+                    for _, card in ipairs(cardinals) do
+                        if card.angle == deg then
+                            cardText = card.text
+                            break
+                        end
+                    end
+                    if cardText ~= "" then
+                        create_marker(cardText, x, true)
+                    end
+                elseif deg % 15 == 0 then
+                    create_marker(tostring(deg), x, false)
+                end
+            end
+        end
+    end
+    
+    local function update_compass_display()
+        if not trackedPlayer or not trackedPlayer.Character then
+            triangle.Visible = false
+            return
+        end
         
         local hrp = trackedPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then
+            triangle.Visible = false
+            return
+        end
+        
         local myHrp = Services.get_humanoid_root_part()
-        if hrp and myHrp then
-            local dist = get_distance(myHrp.Position, hrp.Position)
-            distRow.Text = dist .. " stud"
-            posRow.Text = string.format("X:%.0f Y:%.0f Z:%.0f", hrp.Position.X, hrp.Position.Y, hrp.Position.Z)
-        else
-            distRow.Text = "—"
-            posRow.Text = "—"
+        if not myHrp then
+            triangle.Visible = false
+            return
         end
         
-        local hum = trackedPlayer.Character:FindFirstChild("Humanoid")
-        if hum then
-            healthRow.Text = string.format("%.0f / %.0f", hum.Health, hum.MaxHealth)
-        else
-            healthRow.Text = "—"
+        triangle.Visible = true
+        local angle = get_direction_angle(myHrp.Position, hrp.Position)
+        angle = normalize_angle(angle)
+        
+        local camera = Services.Camera
+        local lookVector = camera.CFrame.LookVector
+        local camYaw = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
+        camYaw = normalize_angle(camYaw)
+        
+        local relativeAngle = normalize_angle(angle - camYaw)
+        if relativeAngle > 180 then
+            relativeAngle = relativeAngle - 360
         end
         
-        content.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y + 10)
+        local visibleRange = 180
+        local offsetX = (relativeAngle / visibleRange) * compassWidth
+        local finalX = centerX + offsetX
+        
+        if math.abs(relativeAngle) <= visibleRange / 2 then
+            finalX = math.clamp(finalX, 0, compassWidth)
+            triangle.Position = UDim2.new(0, finalX - 5, 0, 0)
+            triangle.Visible = true
+        else
+            triangle.Visible = false
+        end
     end
     
-    local detailUpdateConn = Services.RunService.Heartbeat:Connect(function()
-        if trackedPlayer then update_detail() end
+    local lastRebuild = 0
+    updateConn = Services.RunService.Heartbeat:Connect(function()
+        local now = tick()
+        if now - lastRebuild > 0.05 then
+            rebuild_markers()
+            lastRebuild = now
+        end
+        if trackedPlayer then
+            update_compass_display()
+        end
     end)
     
-    update_detail()
+    rebuild_markers()
+    update_compass_display()
 end
 
 function TrackUserFeature.start(player)
@@ -319,14 +304,12 @@ function TrackUserFeature.start(player)
     trackedPlayer = player
     Settings.features.trackedUser = player
     create_compass()
-    create_detail_ui()
 end
 
 function TrackUserFeature.stop()
     trackedPlayer = nil
     Settings.features.trackedUser = nil
     if compassGui then compassGui:Destroy() compassGui = nil end
-    if detailGui then detailGui:Destroy() detailGui = nil end
     if updateConn then updateConn:Disconnect() updateConn = nil end
 end
 
