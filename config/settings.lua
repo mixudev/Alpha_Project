@@ -22,6 +22,8 @@ Settings.features = {
     antiAfkEnabled = false,
     nightVisionEnabled = false,
     chamsEnabled = false,
+    cameraUserEnabled = false,
+    trackedUser = nil,
 }
 
 -- ============================================

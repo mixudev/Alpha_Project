@@ -2,7 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
-    Version: 1.0.3
+    Version: 1.0.4
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -229,6 +229,8 @@ local function load_all()
     local NotifikasiFeature = require_module("features/notifikasi")
     local NightVisionFeature = require_module("features/night_vision")
     local ChamsFeature = require_module("features/chams")
+    local CameraUserFeature = require_module("features/camera_user")
+    local TrackUserFeature = require_module("features/track_user")
     print("✅ Features loaded")
 
     -- Player join times (untuk info popup "Waktu di Map")
@@ -545,6 +547,93 @@ local function load_all()
             end)
             apply_volume(volLevels[volIndex])
         end
+
+        Section.new(utilityPage, "📹 Camera User", 8)
+        Toggle.new(utilityPage, "Camera User", 9, function(enabled)
+            pcall(function() CameraUserFeature.toggle(enabled) end)
+        end)
+
+        Section.new(utilityPage, "📍 Track User", 10)
+        local trackPlayerSelect = Instance.new("TextButton")
+        trackPlayerSelect.Parent = utilityPage
+        trackPlayerSelect.LayoutOrder = 11
+        trackPlayerSelect.Size = UDim2.new(1, -20, 0, 36)
+        trackPlayerSelect.BackgroundColor3 = Config.colors.bg_light
+        trackPlayerSelect.BorderSizePixel = 0
+        trackPlayerSelect.Font = Enum.Font.Gotham
+        trackPlayerSelect.Text = "Pilih User..."
+        trackPlayerSelect.TextColor3 = Config.colors.text_secondary
+        trackPlayerSelect.TextSize = 12
+        trackPlayerSelect.AutoButtonColor = false
+        local trackSelectCorner = Instance.new("UICorner")
+        trackSelectCorner.CornerRadius = UDim.new(0, 6)
+        trackSelectCorner.Parent = trackPlayerSelect
+        
+        local trackBtn = Instance.new("TextButton")
+        trackBtn.Parent = utilityPage
+        trackBtn.LayoutOrder = 12
+        trackBtn.Size = UDim2.new(1, -20, 0, 36)
+        trackBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 100)
+        trackBtn.BorderSizePixel = 0
+        trackBtn.Font = Enum.Font.GothamBold
+        trackBtn.Text = "Track"
+        trackBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        trackBtn.TextSize = 13
+        trackBtn.AutoButtonColor = false
+        local trackCorner = Instance.new("UICorner")
+        trackCorner.CornerRadius = UDim.new(0, 6)
+        trackCorner.Parent = trackBtn
+        
+        local stopTrackBtn = Instance.new("TextButton")
+        stopTrackBtn.Parent = utilityPage
+        stopTrackBtn.LayoutOrder = 13
+        stopTrackBtn.Size = UDim2.new(1, -20, 0, 36)
+        stopTrackBtn.BackgroundColor3 = Color3.fromRGB(120, 50, 50)
+        stopTrackBtn.BorderSizePixel = 0
+        stopTrackBtn.Font = Enum.Font.GothamBold
+        stopTrackBtn.Text = "Stop Track"
+        stopTrackBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        stopTrackBtn.TextSize = 13
+        stopTrackBtn.AutoButtonColor = false
+        local stopTrackCorner = Instance.new("UICorner")
+        stopTrackCorner.CornerRadius = UDim.new(0, 6)
+        stopTrackCorner.Parent = stopTrackBtn
+        
+        local selectedTrackPlayer = nil
+        
+        trackPlayerSelect.MouseButton1Click:Connect(function()
+            local players = {}
+            for _, p in ipairs(CoreServices.Players:GetPlayers()) do
+                if p ~= CoreServices.Players.LocalPlayer then
+                    table.insert(players, p)
+                end
+            end
+            if #players == 0 then
+                trackPlayerSelect.Text = "Tidak ada player"
+                return
+            end
+            local currentIdx = 1
+            for i, p in ipairs(players) do
+                if p == selectedTrackPlayer then
+                    currentIdx = i
+                    break
+                end
+            end
+            currentIdx = currentIdx + 1
+            if currentIdx > #players then currentIdx = 1 end
+            selectedTrackPlayer = players[currentIdx]
+            trackPlayerSelect.Text = (selectedTrackPlayer.DisplayName or selectedTrackPlayer.Name) .. " (@" .. selectedTrackPlayer.Name .. ")"
+        end)
+        
+        trackBtn.MouseButton1Click:Connect(function()
+            if selectedTrackPlayer then
+                pcall(function() TrackUserFeature.start(selectedTrackPlayer) end)
+            end
+        end)
+        
+        stopTrackBtn.MouseButton1Click:Connect(function()
+            pcall(function() TrackUserFeature.stop() end)
+        end)
     end
 
     -- Drone page: keterangan + toggle + speed
@@ -808,7 +897,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
-    print("📌 Version: 1.0.3")
+    print("📌 Version: 1.0.4")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     

@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.3-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
+  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.4-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
   <img src="https://img.shields.io/badge/Roblox-Executor_%26_Local-00a396?style=for-the-badge&labelColor=0d1117" alt="Platform">
 </p>
 
 <h1 align="center">◈ ALPHA PROJECT ◈</h1>
 <p align="center">
-  <strong>Unified utility menu for Roblox</strong> — Players · Tracker · Drone · Notifications · Anti-AFK
+  <strong>Unified utility menu for Roblox</strong> — Players · Tracker · Drone · Camera User · Track User · Notifications · Anti-AFK
 </p>
 <p align="center">
   <sub>Single GUI. Modular load. Executor & Studio ready.</sub>
@@ -51,10 +51,10 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/mixudev/Alpha_Project
 | Menu | Deskripsi |
 |------|-----------|
 | **Players** | Daftar pemain; koneksi (teman) border hijau. Info · POV · TP. |
-| **Settings** | Infinity Jump · Fly · No Clip · ESP · Infinity Zoom · ESP Koneksi · Anti-AFK. |
+| **Settings** | Infinity Jump · **Fly** (5 kecepatan: Sedang/Cepat/Sangat cepat/Super fast/Ultra fast) · No Clip · ESP · Infinity Zoom · ESP Koneksi · Anti-AFK. |
 | **Drone** | Freecam: ON/OFF, speed, zoom (scroll). |
 | **Tracker** | Koneksi kita + koneksi sama (teman dari teman). Popup info minimalis · POV · TP. |
-| **Utility** | Night Vision · Chams · Notifikasi (join/left, checkpoint, damage) · Volume Map. |
+| **Utility** | Night Vision · Chams · Notifikasi (join/left, checkpoint, damage) · Volume Map · **Camera User** (navigasi POV) · **Track User** (panah navigasi + detail). |
 | **Info** | User di map · Detail server (Place ID, Job ID, creator) · Copy. |
 
 <br>
@@ -73,6 +73,34 @@ Saat notifikasi **ON**, popup muncul untuk:
 | Koneksi (damage) | Teman kena damage atau nyawa hilang. |
 
 *Tidak ada notifikasi untuk pindah area.*
+
+<br>
+
+## ▸ Camera User (Utility)
+
+Navigasi POV user dengan tombol kiri/kanan:
+
+- **Toggle ON** → Muncul navigasi di bawah layar (tombol ◀ ▶ + username).
+- **Tombol kiri** → Pindah ke user sebelumnya.
+- **Tombol kanan** → Pindah ke user berikutnya.
+- **Auto-refresh** → Daftar user diperbarui setiap detik.
+- **Display** → Tampilkan nama lengkap dan username (format: `@username (X/Y)`).
+
+<br>
+
+## ▸ Track User (Utility)
+
+Panah navigasi kompas + UI detail user:
+
+- **Pilih User** → Klik "Pilih User..." untuk cycle daftar pemain.
+- **Track** → Klik "Track" untuk mulai tracking user terpilih.
+- **Kompas** → Panah merah di atas layar mengarah ke user yang di-track (N/E/S/W markers).
+- **UI Detail** → Panel kanan atas menampilkan:
+  - Nama lengkap & username
+  - Jarak (stud)
+  - Lokasi (X, Y, Z)
+  - Health (current / max)
+- **Stop Track** → Klik "Stop Track" untuk berhenti tracking.
 
 <br>
 
@@ -117,7 +145,9 @@ Alpha_Project/
 │   ├── noclip.lua
 │   ├── notifikasi.lua
 │   ├── security.lua
-│   └── tracking_friends.lua
+│   ├── tracking_friends.lua
+│   ├── camera_user.lua
+│   └── track_user.lua
 ├── player/
 │   ├── list.lua
 │   ├── info_popup.lua
@@ -147,6 +177,7 @@ Alpha_Project/
 
 | Versi | Ringkasan |
 |-------|-----------|
+| **1.0.4** | **Camera User** (navigasi POV dengan tombol kiri/kanan) · **Track User** (panah navigasi kompas + UI detail jarak/lokasi/health) · Fly 5 kecepatan (Super fast, Ultra fast) · Checkpoint deteksi via leaderstats + Model · Notifikasi antre satu-satu. |
 | **1.0.3** | Players, Settings, Drone, Tracker, Utility, Info. Notifikasi koneksi (tanpa pindah area). Anti-AFK (VirtualUser + nudge). Tracker popup minimalis. Security/Test tidak di GUI. |
 
 ---
