@@ -212,7 +212,6 @@ local function load_all()
     local PlayerList = require_module("player/list")
     local PlayerSpectate = require_module("player/spectate")
     local PlayerInfoPopup = require_module("player/info_popup")
-    local Tracker = require_module("player/tracker")
     
     print("✅ Player System loaded")
     
@@ -347,7 +346,6 @@ local function load_all()
     local playersPage = UIPages.create("Players", UIStructure.content)
     local settingsPage = UIPages.create("Settings", UIStructure.content)
     local dronePage = UIPages.create("Drone", UIStructure.content)
-    local trackerPage = UIPages.create("Tracker", UIStructure.content)
     local utilityPage = UIPages.create("Utility", UIStructure.content)
     local infoPage = UIPages.create("Info", UIStructure.content)
 
@@ -364,11 +362,6 @@ local function load_all()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, dronePage)
     end
 
-    local function render_tracker()
-        Config.ui.currentPage = UIPages.show(Config.ui.currentPage, trackerPage)
-        pcall(function() Tracker.create(trackerPage) end)
-    end
-
     local function render_utility()
         Config.ui.currentPage = UIPages.show(Config.ui.currentPage, utilityPage)
     end
@@ -380,15 +373,12 @@ local function load_all()
     UISidebar.create_nav_button(UIStructure.sidebar, "Players", "👥", 1, render_players)
     UISidebar.create_nav_button(UIStructure.sidebar, "Settings", "⚙️", 2, render_settings)
     UISidebar.create_nav_button(UIStructure.sidebar, "Drone", "📷", 3, render_drone)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Tracker", "🔗", 4, render_tracker)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 5, render_utility)
-    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 6, render_info)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Utility", "🔧", 4, render_utility)
+    UISidebar.create_nav_button(UIStructure.sidebar, "Info", "ℹ️", 5, render_info)
 
     -- Default
     render_players()
     UISidebar.set_active(UIStructure.sidebar, "PlayersNavButton")
-
-    -- Settings UI content (only local features)
     do
         local Section = UIComponents.Section
         local Toggle = UIComponents.Toggle
@@ -680,7 +670,7 @@ local function load_all()
         creatorBox.Parent = infoPage
         creatorBox.BackgroundColor3 = Settings.colors.bg_light
         creatorBox.BorderSizePixel = 0
-        creatorBox.Size = UDim2.new(1, -20, 0, 130)
+        creatorBox.Size = UDim2.new(1, -20, 0, 160)
         creatorBox.LayoutOrder = 1
         local creatorCorner = Instance.new("UICorner")
         creatorCorner.CornerRadius = UDim.new(0, Settings.sizes.corner_radius)
@@ -735,100 +725,95 @@ local function load_all()
             end
         end
         
+        local function create_social_button(parent, label, url, color, yPos)
+            -- Main button container
+            local buttonContainer = Instance.new("Frame")
+            buttonContainer.Parent = parent
+            buttonContainer.Size = UDim2.new(1, -30, 0, 36)
+            buttonContainer.Position = UDim2.new(0, 15, 0, yPos)
+            buttonContainer.BackgroundTransparency = 1
+            
+            -- Link button
+            local linkBtn = Instance.new("TextButton")
+            linkBtn.Parent = buttonContainer
+            linkBtn.Size = UDim2.new(1, -42, 0, 36)
+            linkBtn.Position = UDim2.new(0, 0, 0, 0)
+            linkBtn.BackgroundColor3 = color
+            linkBtn.BorderSizePixel = 0
+            linkBtn.Font = Enum.Font.GothamBold
+            linkBtn.Text = label
+            linkBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            linkBtn.TextSize = 12
+            linkBtn.AutoButtonColor = false
+            
+            local linkCorner = Instance.new("UICorner")
+            linkCorner.CornerRadius = UDim.new(0, 6)
+            linkCorner.Parent = linkBtn
+            
+            linkBtn.MouseButton1Click:Connect(function()
+                copy_to_clipboard(url)
+            end)
+            
+            linkBtn.MouseEnter:Connect(function()
+                local h, s, v = Color3.toHSV(color)
+                linkBtn.BackgroundColor3 = Color3.fromHSV(h, s, math.min(v + 0.1, 1))
+            end)
+            
+            linkBtn.MouseLeave:Connect(function()
+                linkBtn.BackgroundColor3 = color
+            end)
+            
+            -- Copy button
+            local copyBtn = Instance.new("TextButton")
+            copyBtn.Parent = buttonContainer
+            copyBtn.Size = UDim2.new(0, 40, 0, 36)
+            copyBtn.Position = UDim2.new(1, -40, 0, 0)
+            copyBtn.BackgroundColor3 = Settings.colors.bg_medium
+            copyBtn.BorderSizePixel = 0
+            copyBtn.Font = Enum.Font.GothamBold
+            copyBtn.Text = "📋"
+            copyBtn.TextColor3 = Settings.colors.text_primary
+            copyBtn.TextSize = 14
+            copyBtn.AutoButtonColor = false
+            
+            local copyCorner = Instance.new("UICorner")
+            copyCorner.CornerRadius = UDim.new(0, 6)
+            copyCorner.Parent = copyBtn
+            
+            local isCopied = false
+            copyBtn.MouseButton1Click:Connect(function()
+                if not isCopied then
+                    copy_to_clipboard(url)
+                    isCopied = true
+                    copyBtn.Text = "✓"
+                    copyBtn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+                    
+                    task.wait(1.5)
+                    
+                    isCopied = false
+                    copyBtn.Text = "📋"
+                    copyBtn.BackgroundColor3 = Settings.colors.bg_medium
+                end
+            end)
+            
+            copyBtn.MouseEnter:Connect(function()
+                if not isCopied then
+                    copyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+                end
+            end)
+            
+            copyBtn.MouseLeave:Connect(function()
+                if not isCopied then
+                    copyBtn.BackgroundColor3 = Settings.colors.bg_medium
+                end
+            end)
+        end
+        
         -- Discord button
-        local discordBtn = Instance.new("TextButton")
-        discordBtn.Parent = creatorBox
-        discordBtn.Size = UDim2.new(0.3, -5, 0, 28)
-        discordBtn.Position = UDim2.new(0, 15, 0, 76)
-        discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-        discordBtn.BorderSizePixel = 0
-        discordBtn.Font = Enum.Font.GothamBold
-        discordBtn.Text = "🔗 Discord"
-        discordBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        discordBtn.TextSize = 12
-        discordBtn.AutoButtonColor = false
-        local discordCorner = Instance.new("UICorner")
-        discordCorner.CornerRadius = UDim.new(0, 6)
-        discordCorner.Parent = discordBtn
-        discordBtn.MouseButton1Click:Connect(function()
-            local DiscordUrl = "https://discord.gg/your-discord-link"
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then
-                copy_to_clipboard(DiscordUrl)
-            else
-                pcall(function()
-                    game:GetService("GuiService"):BroadcastNotification({
-                        Title = "Discord",
-                        Text = "Link copied to clipboard! (Ctrl+Click to copy)"
-                    })
-                end)
-            end
-        end)
-        discordBtn.MouseEnter:Connect(function()
-            discordBtn.BackgroundColor3 = Color3.fromRGB(108, 121, 262)
-        end)
-        discordBtn.MouseLeave:Connect(function()
-            discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-        end)
+        create_social_button(creatorBox, "🔗 Discord", "https://discord.gg/your-discord-link", Color3.fromRGB(88, 101, 242), 76)
         
         -- GitHub button
-        local githubBtn = Instance.new("TextButton")
-        githubBtn.Parent = creatorBox
-        githubBtn.Size = UDim2.new(0.3, -5, 0, 28)
-        githubBtn.Position = UDim2.new(0.35, 0, 0, 76)
-        githubBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        githubBtn.BorderSizePixel = 0
-        githubBtn.Font = Enum.Font.GothamBold
-        githubBtn.Text = "🔗 GitHub"
-        githubBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        githubBtn.TextSize = 12
-        githubBtn.AutoButtonColor = false
-        local githubCorner = Instance.new("UICorner")
-        githubCorner.CornerRadius = UDim.new(0, 6)
-        githubCorner.Parent = githubBtn
-        githubBtn.MouseButton1Click:Connect(function()
-            local GitHubUrl = "https://github.com/your-github-link"
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftControl) then
-                copy_to_clipboard(GitHubUrl)
-            else
-                pcall(function()
-                    game:GetService("GuiService"):BroadcastNotification({
-                        Title = "GitHub",
-                        Text = "Link copied to clipboard! (Ctrl+Click to copy)"
-                    })
-                end)
-            end
-        end)
-        githubBtn.MouseEnter:Connect(function()
-            githubBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-        end)
-        githubBtn.MouseLeave:Connect(function()
-            githubBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        end)
-        
-        -- Copy button
-        local copyBtn = Instance.new("TextButton")
-        copyBtn.Parent = creatorBox
-        copyBtn.Size = UDim2.new(0.3, 0, 0, 28)
-        copyBtn.Position = UDim2.new(0.7, 0, 0, 76)
-        copyBtn.BackgroundColor3 = Settings.colors.bg_medium
-        copyBtn.BorderSizePixel = 0
-        copyBtn.Font = Enum.Font.GothamBold
-        copyBtn.Text = "📋 Copy"
-        copyBtn.TextColor3 = Settings.colors.text_primary
-        copyBtn.TextSize = 12
-        copyBtn.AutoButtonColor = false
-        local copyCorner = Instance.new("UICorner")
-        copyCorner.CornerRadius = UDim.new(0, 6)
-        copyCorner.Parent = copyBtn
-        copyBtn.MouseButton1Click:Connect(function()
-            copy_to_clipboard("https://github.com/your-github-link")
-        end)
-        copyBtn.MouseEnter:Connect(function()
-            copyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        end)
-        copyBtn.MouseLeave:Connect(function()
-            copyBtn.BackgroundColor3 = Settings.colors.bg_medium
-        end)
+        create_social_button(creatorBox, "🔗 GitHub", "https://github.com/your-github-link", Color3.fromRGB(30, 30, 35), 116)
 
         Section.new(infoPage, "Detail Server", 2)
         add_info_row(infoPage, "User di Map", numPlayers .. " / " .. maxPlayers, 3)

@@ -10,7 +10,6 @@ local Spectate = (Alpha and Alpha.require) and Alpha.require("player/spectate") 
 local InfoPopup = (Alpha and Alpha.require) and Alpha.require("player/info_popup") or require(script.Parent:FindFirstChild("info_popup"))
 local ButtonComponent = (Alpha and Alpha.require) and Alpha.require("ui/components/button") or require(script.Parent.Parent:FindFirstChild("ui/components/button"))
 local HttpUtil = (Alpha and Alpha.require) and Alpha.require("utils/http") or require(script.Parent.Parent:FindFirstChild("utils/http"))
-local TrackUserFeature = (Alpha and Alpha.require) and Alpha.require("features/track_user") or require(script.Parent.Parent:FindFirstChild("features/track_user"))
 
 local PlayerList = {}
 
@@ -140,10 +139,6 @@ function PlayerList.create_player_entry(scrollContent, player, layoutOrder, isFr
         end
     end)
     tpBtn.Size = UDim2.new(0.17, -5, 0, 32)
-    local trackBtn = ButtonComponent.new(playerFrame, "📍", UDim2.new(0.84, 5, 0.5, -16), function()
-        pcall(function() TrackUserFeature.start(player) end)
-    end)
-    trackBtn.Size = UDim2.new(0.17, -5, 0, 32)
 end
 
 -- ============================================
