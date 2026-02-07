@@ -596,6 +596,7 @@ local function load_all()
         dropdownContainer.Size = UDim2.new(1, -20, 0, 0)
         dropdownContainer.BackgroundTransparency = 1
         dropdownContainer.Visible = false
+        dropdownContainer.ZIndex = 10
         
         local containerLayout = Instance.new("UIListLayout")
         containerLayout.Parent = dropdownContainer
