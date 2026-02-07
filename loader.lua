@@ -2,7 +2,7 @@
     Alpha Project - Main Loader
     Entry point untuk seluruh aplikasi
     Support untuk local script & remote loadstring
-    Version: 1.0.6
+    Version: 1.0.7
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -597,8 +597,14 @@ local function load_all()
         dropdownContainer.BackgroundTransparency = 1
         dropdownContainer.Visible = false
         
+        local containerLayout = Instance.new("UIListLayout")
+        containerLayout.Parent = dropdownContainer
+        containerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        containerLayout.Padding = UDim.new(0, 5)
+        
         local searchRow = Instance.new("Frame")
         searchRow.Parent = dropdownContainer
+        searchRow.LayoutOrder = 1
         searchRow.Size = UDim2.new(1, 0, 0, 36)
         searchRow.BackgroundTransparency = 1
         
@@ -638,8 +644,8 @@ local function load_all()
         
         local dropdownList = Instance.new("ScrollingFrame")
         dropdownList.Parent = dropdownContainer
+        dropdownList.LayoutOrder = 2
         dropdownList.Size = UDim2.new(1, 0, 0, 0)
-        dropdownList.Position = UDim2.new(0, 0, 0, 40)
         dropdownList.BackgroundColor3 = Config.colors.bg_light
         dropdownList.BorderSizePixel = 0
         dropdownList.ScrollBarThickness = 4
@@ -730,8 +736,29 @@ local function load_all()
             dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 dropdownList.CanvasSize = UDim2.new(0, 0, 0, dropdownLayout.AbsoluteContentSize.Y + 10)
             end)
+            task.wait()
             dropdownList.CanvasSize = UDim2.new(0, 0, 0, dropdownLayout.AbsoluteContentSize.Y + 10)
         end
+        
+        local function update_dropdown_size()
+            local listHeight = math.min(150, dropdownLayout.AbsoluteContentSize.Y + 10)
+            if listHeight < 40 then listHeight = 40 end
+            dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
+            containerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Wait()
+            dropdownContainer.Size = UDim2.new(1, -20, 0, containerLayout.AbsoluteContentSize.Y)
+        end
+        
+        containerLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            if dropdownContainer.Visible then
+                update_dropdown_size()
+            end
+        end)
+        
+        dropdownLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            if dropdownContainer.Visible then
+                update_dropdown_size()
+            end
+        end)
         
         dropdownBtn.MouseButton1Click:Connect(function()
             update_players_list()
@@ -739,9 +766,8 @@ local function load_all()
             build_dropdown_list(filtered)
             dropdownContainer.Visible = not dropdownContainer.Visible
             if dropdownContainer.Visible then
-                local listHeight = math.min(150, #filtered * 34 + 10)
-                dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
-                dropdownContainer.Size = UDim2.new(1, -20, 0, 36 + listHeight)
+                task.wait()
+                update_dropdown_size()
             end
         end)
         
@@ -750,31 +776,27 @@ local function load_all()
             local filtered = filter_players(searchBox.Text)
             build_dropdown_list(filtered)
             dropdownContainer.Visible = true
-            local listHeight = math.min(150, #filtered * 34 + 10)
-            dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
-            dropdownContainer.Size = UDim2.new(1, -20, 0, 36 + listHeight)
+            task.wait()
+            update_dropdown_size()
         end)
         
         searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-            update_players_list()
-            local filtered = filter_players(searchBox.Text)
-            build_dropdown_list(filtered)
             if dropdownContainer.Visible then
-                local listHeight = math.min(150, #filtered * 34 + 10)
-                dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
-                dropdownContainer.Size = UDim2.new(1, -20, 0, 36 + listHeight)
+                update_players_list()
+                local filtered = filter_players(searchBox.Text)
+                build_dropdown_list(filtered)
+                task.wait()
+                update_dropdown_size()
             end
         end)
         
         searchBox.FocusLost:Connect(function(enterPressed)
-            if enterPressed then
+            if enterPressed and dropdownContainer.Visible then
                 update_players_list()
                 local filtered = filter_players(searchBox.Text)
                 build_dropdown_list(filtered)
-                dropdownContainer.Visible = true
-                local listHeight = math.min(150, #filtered * 34 + 10)
-                dropdownList.Size = UDim2.new(1, 0, 0, listHeight)
-                dropdownContainer.Size = UDim2.new(1, -20, 0, 36 + listHeight)
+                task.wait()
+                update_dropdown_size()
             end
         end)
         
@@ -1080,7 +1102,7 @@ local function load_all()
     
     print("✅ UI Created")
     print("✅✅✅ Alpha Project Loaded Successfully! ✅✅✅")
-    print("📌 Version: 1.0.6")
+    print("📌 Version: 1.0.7")
     print("📌 Press RIGHT CTRL to toggle menu")
     print("🔗 Execution Mode:", isRemote and "REMOTE (GitHub)" or "LOCAL")
     

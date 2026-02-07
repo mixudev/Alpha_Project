@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.6-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
+  <img src="https://img.shields.io/badge/Alpha_Project-v1.0.7-00a396?style=for-the-badge&labelColor=0d1117" alt="Version">
   <img src="https://img.shields.io/badge/Roblox-Executor_%26_Local-00a396?style=for-the-badge&labelColor=0d1117" alt="Platform">
 </p>
 
@@ -177,6 +177,7 @@ Alpha_Project/
 
 | Versi | Ringkasan |
 |-------|-----------|
+| **1.0.7** | **Track User**: Perbaikan dropdown menggunakan UIListLayout · Dropdown sekarang muncul dengan benar · Auto-resize container. |
 | **1.0.6** | **Track User**: Pencarian dipindahkan ke dalam dropdown · Perbaikan bug dropdown tidak muncul · Filter real-time saat mengetik. |
 | **1.0.5** | **Track User**: Kompas horizontal di atas (arah mata angin + derajat + triangle indicator) · Dropdown + pencarian user · UI detail dihapus. |
 | **1.0.4** | **Camera User** (navigasi POV dengan tombol kiri/kanan) · **Track User** (panah navigasi kompas + UI detail jarak/lokasi/health) · Fly 5 kecepatan (Super fast, Ultra fast) · Checkpoint deteksi via leaderstats + Model · Notifikasi antre satu-satu. |
