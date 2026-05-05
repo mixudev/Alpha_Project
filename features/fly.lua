@@ -28,7 +28,10 @@ end
 -- ============================================
 
 function FlyFeature.start()
-    if flyActive then return end
+    -- Bersihkan state lama jika ada
+    if flyActive then
+        FlyFeature.stop()
+    end
     
     local char = Services.get_character()
     local hrp = Services.get_humanoid_root_part()
@@ -37,10 +40,6 @@ function FlyFeature.start()
     
     flyActive = true
     Settings.features.flyEnabled = true
-    
-    -- Pose & State
-    -- Menggunakan state Falling agar tangan dan kaki otomatis bergerak (Universal)
-    humanoid:ChangeState(Enum.HumanoidStateType.Falling)
     
     -- Movement Setup
     bodyVelocity = Instance.new("BodyVelocity")
@@ -99,14 +98,13 @@ function FlyFeature.start()
         
         -- Smooth Rotation Interpolation
         bodyGyro.CFrame = bodyGyro.CFrame:Lerp(targetCFrame, 0.1)
-        
-        -- Pastikan tangan dan kaki tetap diam (Stop animations)
-        local humanoid = Services.get_humanoid()
-        if humanoid then
-            humanoid.PlatformStand = true
-            for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-                track:Stop(0)
-            end
+    end)
+    
+    -- Pastikan tangan dan kaki diam
+    pcall(function()
+        humanoid.PlatformStand = true
+        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop(0)
         end
     end)
     
