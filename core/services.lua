@@ -24,10 +24,10 @@ Services.TeleportService = game:GetService("TeleportService")
 -- ============================================
 
 Services.LocalPlayer = Services.Players.LocalPlayer
-Services.Character = Services.LocalPlayer.Character or Services.LocalPlayer.CharacterAdded:Wait()
-Services.Humanoid = Services.Character:WaitForChild("Humanoid")
-Services.HumanoidRootPart = Services.Character:WaitForChild("HumanoidRootPart")
-Services.Camera = Services.Workspace.CurrentCamera
+
+function Services.get_camera()
+    return Services.Workspace.CurrentCamera
+end
 
 -- ============================================
 -- HELPER: Get Current Character
