@@ -1,6 +1,6 @@
 --[[
     Alpha Project - Audio Manager
-    Mengatur volume seluruh suara di map secara cerdas (Musik, SFX, Aksi, dll).
+    Mengatur volume seluruh suara di map secara agresif (Musik, SFX, Ambient).
     Mengecualikan suara Voice Chat / Mic agar tetap terdengar.
 ]]
 
@@ -10,24 +10,27 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 
 local AudioManager = {}
 
-local originalVolumes = {} -- {[Sound] = originalVolume}
+local originalVolumes = {} -- {[Instance] = originalVolume}
+local isUpdating = {}      -- {[Instance] = boolean} to prevent feedback loops
 local currentVolumeScale = 1.0
 
--- Deteksi apakah suara tersebut adalah Voice Chat / Mic pemain
+-- ============================================
+-- VOICE DETECTION (Jangan di-mute)
+-- ============================================
+
 local function is_voice_sound(sound)
     if not sound:IsA("Sound") then return false end
     
     local name = sound.Name:lower()
     local parent = sound.Parent
     
-    -- 1. Berdasarkan nama umum voice chat
+    -- 1. Nama umum voice chat
     if name:find("voice") or name:find("mic") or name:find("talk") or name:find("speech") then
         return true
     end
     
-    -- 2. Suara di bawah karakter (biasanya voice chat atau sound effect karakter spesifik)
-    -- Kita coba lebih spesifik: biasanya di dalam Head
-    if parent and parent.Name == "Head" and parent.Parent:FindFirstChild("Humanoid") then
+    -- 2. Suara di dalam Head (biasanya voice chat)
+    if parent and parent.Name == "Head" and parent.Parent:FindFirstChildOfClass("Humanoid") then
         return true
     end
     
@@ -39,71 +42,90 @@ local function is_voice_sound(sound)
     return false
 end
 
--- Terapkan volume berdasarkan scale saat ini
-function AudioManager.apply_to_sound(sound)
-    if not sound:IsA("Sound") then return end
-    if is_voice_sound(sound) then return end
+-- ============================================
+-- CORE LOGIC
+-- ============================================
+
+function AudioManager.apply_to_instance(inst)
+    if not inst:IsA("Sound") and not inst:IsA("SoundGroup") then return end
+    if inst:IsA("Sound") and is_voice_sound(inst) then return end
+    
+    -- Mencegah loop jika kita yang merubah volumenya
+    if isUpdating[inst] then return end
     
     pcall(function()
-        -- Simpan volume asli jika belum tercatat
-        if not originalVolumes[sound] then
-            originalVolumes[sound] = sound.Volume
+        if not originalVolumes[inst] then
+            originalVolumes[inst] = inst.Volume
             
-            -- Pantau jika script map merubah volume asli
-            sound:GetPropertyChangedSignal("Volume"):Connect(function()
-                local target = originalVolumes[sound] * currentVolumeScale
-                -- Jika perubahan volumenya signifikan dan bukan dilakukan oleh kita
-                if math.abs(sound.Volume - target) > 0.001 then
-                    originalVolumes[sound] = sound.Volume
+            -- Pantau perubahan volume dari script game
+            inst:GetPropertyChangedSignal("Volume"):Connect(function()
+                if isUpdating[inst] then return end
+                
+                local target = originalVolumes[inst] * currentVolumeScale
+                -- Jika script game mencoba merubah volume
+                if math.abs(inst.Volume - target) > 0.001 then
+                    originalVolumes[inst] = inst.Volume
+                    -- Paksa kembali ke skala kita secara instan
+                    AudioManager.apply_to_instance(inst)
                 end
             end)
         end
         
-        -- Set ke volume yang diskalakan
-        sound.Volume = originalVolumes[sound] * currentVolumeScale
+        -- Set volume dengan flag isUpdating aktif
+        isUpdating[inst] = true
+        inst.Volume = originalVolumes[inst] * currentVolumeScale
+        task.delay(0.05, function() isUpdating[inst] = nil end)
     end)
 end
 
--- Fungsi utama untuk merubah volume seluruh map
 function AudioManager.set_volume(scale)
     currentVolumeScale = math.clamp(scale, 0, 1)
     Settings.audio.currentVolume = currentVolumeScale
     
-    -- Target lokasi suara yang umum
     local targetServices = {
         Services.Workspace,
         game:GetService("SoundService"),
         game:GetService("Players"),
-        game:GetService("ReplicatedStorage") -- Beberapa game menaruh suara di sini untuk di-clone
+        game:GetService("ReplicatedStorage"),
+        game:GetService("Lighting"),
+        game:GetService("StarterGui")
     }
     
     for _, service in ipairs(targetServices) do
         for _, d in ipairs(service:GetDescendants()) do
-            AudioManager.apply_to_sound(d)
+            if d:IsA("Sound") or d:IsA("SoundGroup") then
+                AudioManager.apply_to_instance(d)
+            end
         end
     end
 end
 
--- Listener untuk suara yang baru ditambahkan (dynamic sounds)
+-- ============================================
+-- INITIALIZATION
+-- ============================================
+
 local function init()
     local targetServices = {
         Services.Workspace,
         game:GetService("SoundService"),
         game:GetService("Players"),
-        game:GetService("ReplicatedStorage")
+        game:GetService("ReplicatedStorage"),
+        game:GetService("Lighting"),
+        game:GetService("StarterGui")
     }
     
     for _, service in ipairs(targetServices) do
+        -- Pantau suara baru yang muncul secara dinamis
         service.DescendantAdded:Connect(function(d)
-            if d:IsA("Sound") then
-                task.wait(0.1) -- Beri jeda agar script map selesai inisialisasi volumenya
-                AudioManager.apply_to_sound(d)
+            if d:IsA("Sound") or d:IsA("SoundGroup") then
+                task.wait(0.2) -- Tunggu script game inisialisasi volume aslinya
+                AudioManager.apply_to_instance(d)
             end
         end)
     end
     
-    -- Initial apply
-    AudioManager.set_volume(Settings.audio.currentVolume)
+    -- Terapkan volume awal
+    AudioManager.set_volume(Settings.audio.currentVolume or 1.0)
 end
 
 task.spawn(init)
