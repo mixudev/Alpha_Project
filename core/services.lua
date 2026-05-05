@@ -40,13 +40,13 @@ end
 function Services.get_humanoid()
     local char = Services.get_character()
     if not char then return nil end
-    return char:FindFirstChild("Humanoid")
+    return char:FindFirstChildOfClass("Humanoid")
 end
 
 function Services.get_humanoid_root_part()
     local char = Services.get_character()
     if not char then return nil end
-    return char:FindFirstChild("HumanoidRootPart")
+    return char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart
 end
 
 -- ============================================
