@@ -22,9 +22,10 @@ function Spectate.stop()
     end
     
     local humanoid = Services.get_humanoid()
-    if humanoid then
-        Services.Camera.CameraType = Enum.CameraType.Custom
-        Services.Camera.CameraSubject = humanoid
+    local camera = Services.get_camera()
+    if humanoid and camera then
+        camera.CameraType = Enum.CameraType.Custom
+        camera.CameraSubject = humanoid
     end
     
     print("📹 Spectate stopped")
@@ -47,15 +48,19 @@ function Spectate.start(targetPlayer)
         Spectate.stop()
     end
     
+    local camera = Services.get_camera()
+    if not camera then return end
+    
     Settings.spectate.spectatingPlayer = targetPlayer
-    Services.Camera.CameraType = Enum.CameraType.Follow
-    Services.Camera.CameraSubject = targetHumanoid
+    camera.CameraType = Enum.CameraType.Follow
+    camera.CameraSubject = targetHumanoid
     
     -- Monitor for character changes
     Settings.spectate.spectateConnection = targetPlayer.CharacterAdded:Connect(function(newChar)
         local newHumanoid = newChar:FindFirstChild("Humanoid")
-        if newHumanoid then
-            Services.Camera.CameraSubject = newHumanoid
+        local camera = Services.get_camera()
+        if newHumanoid and camera then
+            camera.CameraSubject = newHumanoid
         end
     end)
     

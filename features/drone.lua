@@ -83,7 +83,7 @@ local function enable_drone()
     if active then return end
     char = Services.get_character()
     humanoid = char and char:FindFirstChild("Humanoid")
-    local cam = Services.Camera
+    local cam = Services.get_camera()
     if not cam then return end
 
     active = true
@@ -225,7 +225,7 @@ local function disable_drone()
         DroneFeature._inputEndedConn = nil
     end
 
-    local cam = Services.Camera
+    local cam = Services.get_camera()
     if cam then
         cam.CameraType = originalCameraType or Enum.CameraType.Custom
         cam.CameraSubject = originalCameraSubject

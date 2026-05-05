@@ -15,7 +15,8 @@ local updateConn = nil
 
 local function get_direction_angle(from, to)
     if not from or not to then return 0 end
-    local camera = Services.Camera
+    local camera = Services.get_camera()
+    if not camera then return 0 end
     local camCF = camera.CFrame
     local toTarget = (to - from)
     local forward = camCF.LookVector
@@ -172,7 +173,8 @@ local function create_compass()
         local angle = get_direction_angle(myHrp.Position, hrp.Position)
         angle = normalize_angle(angle)
         
-        local camera = Services.Camera
+        local camera = Services.get_camera()
+        if not camera then return end
         local camYaw = math.deg(math.atan2(-camera.CFrame.LookVector.X, -camera.CFrame.LookVector.Z))
         camYaw = normalize_angle(camYaw)
         
@@ -197,7 +199,8 @@ local function create_compass()
         compassWidth = compassContent.AbsoluteSize.X
         centerX = compassWidth / 2
         
-        local camera = Services.Camera
+        local camera = Services.get_camera()
+        if not camera then return end
         local lookVector = camera.CFrame.LookVector
         local camYaw = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
         camYaw = normalize_angle(camYaw)
@@ -260,7 +263,8 @@ local function create_compass()
         local angle = get_direction_angle(myHrp.Position, hrp.Position)
         angle = normalize_angle(angle)
         
-        local camera = Services.Camera
+        local camera = Services.get_camera()
+        if not camera then return end
         local lookVector = camera.CFrame.LookVector
         local camYaw = math.deg(math.atan2(-lookVector.X, -lookVector.Z))
         camYaw = normalize_angle(camYaw)

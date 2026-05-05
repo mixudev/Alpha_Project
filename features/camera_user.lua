@@ -38,13 +38,17 @@ local function spectate_player(player)
     local humanoid = player.Character:FindFirstChild("Humanoid")
     if not humanoid then return end
     
-    Services.Camera.CameraType = Enum.CameraType.Follow
-    Services.Camera.CameraSubject = humanoid
+    local camera = Services.get_camera()
+    if not camera then return end
+    
+    camera.CameraType = Enum.CameraType.Follow
+    camera.CameraSubject = humanoid
     
     if spectateConn then spectateConn:Disconnect() end
     spectateConn = player.CharacterAdded:Connect(function(newChar)
         local newHum = newChar:FindFirstChild("Humanoid")
-        if newHum then Services.Camera.CameraSubject = newHum end
+        local camera = Services.get_camera()
+        if newHum and camera then camera.CameraSubject = newHum end
     end)
 end
 
@@ -170,9 +174,10 @@ local function destroy_nav_gui()
     if navGui then navGui:Destroy() navGui = nil end
     if spectateConn then spectateConn:Disconnect() spectateConn = nil end
     local humanoid = Services.get_humanoid()
-    if humanoid then
-        Services.Camera.CameraType = Enum.CameraType.Custom
-        Services.Camera.CameraSubject = humanoid
+    local camera = Services.get_camera()
+    if humanoid and camera then
+        camera.CameraType = Enum.CameraType.Custom
+        camera.CameraSubject = humanoid
     end
 end
 
