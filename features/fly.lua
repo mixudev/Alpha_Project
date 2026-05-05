@@ -9,38 +9,18 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 
 local FlyFeature = {}
 
-local FLY_SPEEDS = { 40, 80, 150, 300, 500 }
+local FLY_SPEEDS = { 50, 100, 200, 400, 800 }
 local flyActive = false
 local bodyVelocity = nil
 local bodyGyro = nil
-local flyAnimation = nil
+
+local currentVelocity = Vector3.new(0, 0, 0)
+local smoothness = 0.15 -- Nilai rendah = lebih licin/smooth
 
 local function get_fly_speed()
     local idx = tonumber(Settings.features.flySpeed) or 2
     idx = math.clamp(idx, 1, 5)
     return FLY_SPEEDS[idx]
-end
-
--- ============================================
--- ANIMATION HELPERS
--- ============================================
-
-local function stop_all_animations(humanoid)
-    if not humanoid then return end
-    pcall(function()
-        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-            track:Stop(0)
-        end
-    end)
-end
-
-local function get_fly_anim_id(humanoid)
-    -- Deteksi R6 atau R15
-    if humanoid.RigType == Enum.HumanoidRigType.R15 then
-        return "rbxassetid://507767714" -- R15 Fly/Hover (Gaya keren)
-    else
-        return "rbxassetid://180436148" -- R6 Fall/Fly
-    end
 end
 
 -- ============================================
@@ -58,71 +38,75 @@ function FlyFeature.start()
     flyActive = true
     Settings.features.flyEnabled = true
     
-    -- Setup Animation
-    pcall(function()
-        stop_all_animations(humanoid)
-        
-        local anim = Instance.new("Animation")
-        anim.AnimationId = get_fly_anim_id(humanoid)
-        
-        local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
-        flyAnimation = animator:LoadAnimation(anim)
-        flyAnimation.Priority = Enum.AnimationPriority.Action
-        flyAnimation.Looped = true
-        flyAnimation:Play(0.1)
-    end)
+    -- Pose & State
+    -- Menggunakan state Falling agar tangan dan kaki otomatis bergerak (Universal)
+    humanoid:ChangeState(Enum.HumanoidStateType.Falling)
     
-    -- Physics Setup
-    humanoid.PlatformStand = true
-    
+    -- Movement Setup
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
     
+    -- Rotation Setup
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-    bodyGyro.D = 100
-    bodyGyro.P = 10000
+    bodyGyro.D = 500
+    bodyGyro.P = 3000
     bodyGyro.CFrame = hrp.CFrame
     bodyGyro.Parent = hrp
     
-    -- Setup movement loop
-    Settings.connections.fly = Services.RunService.Heartbeat:Connect(function()
+    currentVelocity = Vector3.new(0, 0, 0)
+    
+    -- Loop pergerakan
+    Settings.connections.fly = Services.RunService.RenderStepped:Connect(function(dt)
         if not flyActive or not Services.get_humanoid_root_part() then
             FlyFeature.stop()
             return
         end
         
         local camera = Services.Camera
-        local moveVector = Vector3.new(0, 0, 0)
+        local hrp = Services.get_humanoid_root_part()
+        local moveDirection = Vector3.new(0, 0, 0)
         
-        -- WASD + Space + Shift
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + camera.CFrame.LookVector end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - camera.CFrame.LookVector end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - camera.CFrame.RightVector end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + camera.CFrame.RightVector end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0, 1, 0) end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector = moveVector - Vector3.new(0, 1, 0) end
+        -- Input Detection
+        local uis = Services.UserInputService
+        if uis:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + camera.CFrame.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection - camera.CFrame.LookVector end
+        if uis:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection - camera.CFrame.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + camera.CFrame.RightVector end
+        if uis:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+        if uis:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection = moveDirection - Vector3.new(0, 1, 0) end
         
-        bodyVelocity.Velocity = moveVector * get_fly_speed()
+        -- Target Velocity & Smoothing
+        local targetVelocity = moveDirection * get_fly_speed()
+        currentVelocity = currentVelocity:Lerp(targetVelocity, smoothness)
+        bodyVelocity.Velocity = currentVelocity
         
-        -- Update Orientation
-        if moveVector.Magnitude > 0 then
-            bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + moveVector)
-        else
-            bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + camera.CFrame.LookVector)
+        -- Banking / Miring Logic (Efek Pesawat/Superhero)
+        local targetCFrame = camera.CFrame
+        if moveDirection.Magnitude > 0 then
+            -- Hitung rotasi berdasarkan arah gerakan
+            local lookAt = CFrame.new(hrp.Position, hrp.Position + moveDirection)
+            
+            -- Tambahkan efek miring (Tilt)
+            local tiltAngle = 0
+            local sideSpeed = moveDirection:Dot(camera.CFrame.RightVector)
+            tiltAngle = math.rad(-sideSpeed * 30) -- Miring ke samping saat belok
+            
+            targetCFrame = lookAt * CFrame.Angles(math.rad(-20), 0, tiltAngle) -- Menunduk sedikit saat maju
         end
         
-        -- Bersihkan animasi game yang mencoba override (setiap beberapa frame)
-        if math.random(1, 10) == 1 then
-            pcall(function()
-                for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
-                    if track ~= flyAnimation then
-                        track:Stop(0)
-                    end
-                end
-            end)
+        -- Smooth Rotation Interpolation
+        bodyGyro.CFrame = bodyGyro.CFrame:Lerp(targetCFrame, 0.1)
+        
+        -- Pastikan tangan dan kaki tetap diam (Stop animations)
+        local humanoid = Services.get_humanoid()
+        if humanoid then
+            humanoid.PlatformStand = true
+            for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                track:Stop(0)
+            end
         end
     end)
     
@@ -141,14 +125,7 @@ function FlyFeature.stop()
     
     local humanoid = Services.get_humanoid()
     if humanoid then
-        humanoid.PlatformStand = false
         humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-        stop_all_animations(humanoid)
-    end
-    
-    if flyAnimation then
-        pcall(function() flyAnimation:Stop() end)
-        flyAnimation = nil
     end
     
     if Settings.connections.fly then
