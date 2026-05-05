@@ -24,6 +24,9 @@ Settings.features = {
     chamsEnabled = false,
     cameraUserEnabled = false,
     trackedUser = nil,
+    walkSpeedEnabled = false,
+    walkSpeedValue = 16,
+    walkSpeedMode = "absolute", -- "absolute" or "multiplier"
 }
 
 -- ============================================

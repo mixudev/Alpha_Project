@@ -231,6 +231,8 @@ local function load_all()
     local ChamsFeature = require_module("features/chams")
     local CameraUserFeature = require_module("features/camera_user")
     local TrackUserFeature = require_module("features/track_user")
+    local WalkSpeedFeature = require_module("features/walkspeed")
+    local AudioManager = require_module("features/audio_manager")
     print("✅ Features loaded")
 
     -- Player join times (untuk info popup "Waktu di Map")
@@ -299,6 +301,8 @@ local function load_all()
             pcall(function() DroneFeature.toggle(false) end)
             pcall(function() NightVisionFeature.toggle(false) end)
             pcall(function() ChamsFeature.toggle(false) end)
+            pcall(function() WalkSpeedFeature.toggle(false) end)
+            pcall(function() AudioManager.set_volume(1.0) end)
             pcall(function() PlayerSpectate.stop() end)
             Config.reset_all_features()
             destroy_confirm()
@@ -436,6 +440,46 @@ local function load_all()
             end)
         end
 
+        Toggle.new(settingsPage, "WalkSpeed / Lari", 4.1, function(enabled)
+            pcall(function() WalkSpeedFeature.toggle(enabled) end)
+        end)
+
+        local wsRow = Instance.new("Frame")
+        wsRow.Parent = settingsPage
+        wsRow.LayoutOrder = 4.2
+        wsRow.Size = UDim2.new(1, -20, 0, 32)
+        wsRow.BackgroundTransparency = 1
+        local wsLayout = Instance.new("UIListLayout")
+        wsLayout.Parent = wsRow
+        wsLayout.FillDirection = Enum.FillDirection.Horizontal
+        wsLayout.Padding = UDim.new(0, 8)
+        wsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        local wsVals = { 32, 60, 100, 200 }
+        local wsLabels = { "Lari", "Flash", "Sonic", "Cheater" }
+        for i = 1, #wsVals do
+            local btn = Instance.new("TextButton")
+            btn.Parent = wsRow
+            btn.Size = UDim2.new(0, 0, 0, 28)
+            btn.AutomaticSize = Enum.AutomaticSize.X
+            btn.BackgroundColor3 = (Config.features.walkSpeedValue == wsVals[i]) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
+            btn.BorderSizePixel = 0
+            btn.Font = Enum.Font.Gotham
+            btn.Text = "  " .. wsLabels[i] .. "  "
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.TextSize = 11
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 4)
+            corner.Parent = btn
+            btn.MouseButton1Click:Connect(function()
+                pcall(function() WalkSpeedFeature.set_speed(wsVals[i]) end)
+                for _, c in ipairs(wsRow:GetChildren()) do
+                    if c:IsA("TextButton") then
+                        c.BackgroundColor3 = (c == btn) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
+                    end
+                end
+            end)
+        end
+
         Toggle.new(settingsPage, "No Clip", 5, function(enabled)
             pcall(function() NoClipFeature.toggle(enabled) end)
         end)
@@ -492,18 +536,8 @@ local function load_all()
             local volLevels = {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0}
             local volIndex = 1
             local function apply_volume(vol)
-                Config.audio.currentVolume = vol
-                for _, d in pairs(CoreServices.Workspace:GetDescendants()) do
-                    if d:IsA("Sound") then
-                        pcall(function() d.Volume = vol end)
-                    end
-                end
+                pcall(function() AudioManager.set_volume(vol) end)
             end
-            CoreServices.Workspace.DescendantAdded:Connect(function(d)
-                if d:IsA("Sound") then
-                    pcall(function() d.Volume = Config.audio.currentVolume end)
-                end
-            end)
             local volToggle = Instance.new("TextButton")
             volToggle.Name = "VolumeMapToggle"
             volToggle.Parent = utilityPage
@@ -1118,6 +1152,7 @@ local function load_all()
         FlyFeature = FlyFeature,
         NoClipFeature = NoClipFeature,
         InfinityJump = InfinityJump,
+        WalkSpeedFeature = WalkSpeedFeature,
     }
 end
 
