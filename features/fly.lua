@@ -22,6 +22,28 @@ local function get_fly_speed()
 end
 
 -- ============================================
+-- ANIMATION HELPERS
+-- ============================================
+
+local function stop_all_animations(humanoid)
+    if not humanoid then return end
+    pcall(function()
+        for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop(0)
+        end
+    end)
+end
+
+local function get_fly_anim_id(humanoid)
+    -- Deteksi R6 atau R15
+    if humanoid.RigType == Enum.HumanoidRigType.R15 then
+        return "rbxassetid://507767714" -- R15 Fly/Hover (Gaya keren)
+    else
+        return "rbxassetid://180436148" -- R6 Fall/Fly
+    end
+end
+
+-- ============================================
 -- START FLY
 -- ============================================
 
@@ -36,27 +58,28 @@ function FlyFeature.start()
     flyActive = true
     Settings.features.flyEnabled = true
     
-    -- Setup Animation (Gaya terbang)
-    -- Menggunakan Animasi 'Fall' default R15 yang terlihat seperti melayang
+    -- Setup Animation
     pcall(function()
+        stop_all_animations(humanoid)
+        
         local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://507767968" -- R15 Fall
-        flyAnimation = humanoid:WaitForChild("Animator"):LoadAnimation(anim)
+        anim.AnimationId = get_fly_anim_id(humanoid)
+        
+        local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+        flyAnimation = animator:LoadAnimation(anim)
         flyAnimation.Priority = Enum.AnimationPriority.Action
         flyAnimation.Looped = true
-        flyAnimation:Play()
+        flyAnimation:Play(0.1)
     end)
     
-    -- Disable physics animations
+    -- Physics Setup
     humanoid.PlatformStand = true
     
-    -- Create BodyVelocity (Movement)
     bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
     
-    -- Create BodyGyro (Orientation agar karakter menghadap arah terbang)
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
     bodyGyro.D = 100
@@ -75,37 +98,35 @@ function FlyFeature.start()
         local moveVector = Vector3.new(0, 0, 0)
         
         -- WASD + Space + Shift
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveVector = moveVector + camera.CFrame.LookVector
-        end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveVector = moveVector - camera.CFrame.LookVector
-        end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveVector = moveVector - camera.CFrame.RightVector
-        end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveVector = moveVector + camera.CFrame.RightVector
-        end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveVector = moveVector + Vector3.new(0, 1, 0)
-        end
-        if Services.UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            moveVector = moveVector - Vector3.new(0, 1, 0)
-        end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVector = moveVector + camera.CFrame.LookVector end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVector = moveVector - camera.CFrame.LookVector end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVector = moveVector - camera.CFrame.RightVector end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVector = moveVector + camera.CFrame.RightVector end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveVector = moveVector + Vector3.new(0, 1, 0) end
+        if Services.UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveVector = moveVector - Vector3.new(0, 1, 0) end
         
         bodyVelocity.Velocity = moveVector * get_fly_speed()
         
-        -- Update Rotation (Karakter menghadap arah kamera agar lebih gaya)
+        -- Update Orientation
         if moveVector.Magnitude > 0 then
             bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + moveVector)
         else
-            bodyGyro.CFrame = camera.CFrame
+            bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + camera.CFrame.LookVector)
+        end
+        
+        -- Bersihkan animasi game yang mencoba override (setiap beberapa frame)
+        if math.random(1, 10) == 1 then
+            pcall(function()
+                for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                    if track ~= flyAnimation then
+                        track:Stop(0)
+                    end
+                end
+            end)
         end
     end)
     
     table.insert(Settings.connections.all, Settings.connections.fly)
-    print("✅ Fly activated with animations")
 end
 
 -- ============================================
@@ -122,29 +143,21 @@ function FlyFeature.stop()
     if humanoid then
         humanoid.PlatformStand = false
         humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        stop_all_animations(humanoid)
     end
     
     if flyAnimation then
-        flyAnimation:Stop()
+        pcall(function() flyAnimation:Stop() end)
         flyAnimation = nil
     end
     
     if Settings.connections.fly then
-        Settings.connections.fly:Disconnect()
+        pcall(function() Settings.connections.fly:Disconnect() end)
         Settings.connections.fly = nil
     end
     
-    if bodyVelocity then
-        bodyVelocity:Destroy()
-        bodyVelocity = nil
-    end
-    
-    if bodyGyro then
-        bodyGyro:Destroy()
-        bodyGyro = nil
-    end
-    
-    print("❌ Fly deactivated")
+    if bodyVelocity then pcall(function() bodyVelocity:Destroy() end) bodyVelocity = nil end
+    if bodyGyro then pcall(function() bodyGyro:Destroy() end) bodyGyro = nil end
 end
 
 -- ============================================
