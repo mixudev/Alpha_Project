@@ -23,10 +23,10 @@ local minZoomConnection = nil
 -- ============================================
 
 local function apply_zoom_limits(minZ, maxZ)
-    local cam = Services.Camera
-    if cam then
-        if maxZ ~= nil then pcall(function() cam.MaxZoom = maxZ end) end
-        if minZ ~= nil then pcall(function() if cam.MinZoom ~= nil then cam.MinZoom = minZ end end) end
+    local player = Services.LocalPlayer
+    if player then
+        if maxZ ~= nil then pcall(function() player.CameraMaxZoomDistance = maxZ end) end
+        if minZ ~= nil then pcall(function() player.CameraMinZoomDistance = minZ end) end
     end
 end
 
@@ -37,31 +37,31 @@ end
 local function enable_infinity_zoom()
     Settings.features.infinityZoomEnabled = true
     apply_zoom_limits(INFINITY_MIN_ZOOM, INFINITY_MAX_ZOOM)
-    local cam = Services.Camera
-    if not cam then return end
+    
+    local player = Services.LocalPlayer
+    if not player then return end
+    
     if zoomChangedConnection then zoomChangedConnection:Disconnect() end
-    zoomChangedConnection = cam:GetPropertyChangedSignal("MaxZoom"):Connect(function()
-        if Settings.features.infinityZoomEnabled and cam.MaxZoom ~= INFINITY_MAX_ZOOM then
-            cam.MaxZoom = INFINITY_MAX_ZOOM
+    zoomChangedConnection = player:GetPropertyChangedSignal("CameraMaxZoomDistance"):Connect(function()
+        if Settings.features.infinityZoomEnabled and player.CameraMaxZoomDistance ~= INFINITY_MAX_ZOOM then
+            player.CameraMaxZoomDistance = INFINITY_MAX_ZOOM
         end
     end)
+    
     if minZoomConnection then minZoomConnection:Disconnect() end
-    pcall(function()
-        if cam.MinZoom ~= nil then
-            minZoomConnection = cam:GetPropertyChangedSignal("MinZoom"):Connect(function()
-                if Settings.features.infinityZoomEnabled and cam.MinZoom > INFINITY_MIN_ZOOM then
-                    pcall(function() cam.MinZoom = INFINITY_MIN_ZOOM end)
-                end
-            end)
+    minZoomConnection = player:GetPropertyChangedSignal("CameraMinZoomDistance"):Connect(function()
+        if Settings.features.infinityZoomEnabled and player.CameraMinZoomDistance > INFINITY_MIN_ZOOM then
+            player.CameraMinZoomDistance = INFINITY_MIN_ZOOM
         end
     end)
+    
     if zoomConnection then zoomConnection:Disconnect() end
     zoomConnection = Services.RunService.RenderStepped:Connect(function()
         if not Settings.features.infinityZoomEnabled then return end
-        local c = Services.Camera
-        if c then
-            if c.MaxZoom ~= INFINITY_MAX_ZOOM then pcall(function() c.MaxZoom = INFINITY_MAX_ZOOM end) end
-            if c.MinZoom ~= nil and c.MinZoom > INFINITY_MIN_ZOOM then pcall(function() c.MinZoom = INFINITY_MIN_ZOOM end) end
+        local p = Services.LocalPlayer
+        if p then
+            if p.CameraMaxZoomDistance ~= INFINITY_MAX_ZOOM then pcall(function() p.CameraMaxZoomDistance = INFINITY_MAX_ZOOM end) end
+            if p.CameraMinZoomDistance > INFINITY_MIN_ZOOM then pcall(function() p.CameraMinZoomDistance = INFINITY_MIN_ZOOM end) end
         end
     end)
 end

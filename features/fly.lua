@@ -9,9 +9,11 @@ local Settings = (Alpha and Alpha.require) and Alpha.require("config/settings") 
 
 local FlyFeature = {}
 
-local FLY_SPEEDS = { 28, 58, 98, 160, 250 }
+local FLY_SPEEDS = { 40, 80, 150, 300, 500 }
 local flyActive = false
 local bodyVelocity = nil
+local bodyGyro = nil
+local flyAnimation = nil
 
 local function get_fly_speed()
     local idx = tonumber(Settings.features.flySpeed) or 2
@@ -26,17 +28,41 @@ end
 function FlyFeature.start()
     if flyActive then return end
     
+    local char = Services.get_character()
     local hrp = Services.get_humanoid_root_part()
-    if not hrp then return end
+    local humanoid = Services.get_humanoid()
+    if not hrp or not humanoid then return end
     
     flyActive = true
     Settings.features.flyEnabled = true
     
-    -- Create BodyVelocity
+    -- Setup Animation (Gaya terbang)
+    -- Menggunakan Animasi 'Fall' default R15 yang terlihat seperti melayang
+    pcall(function()
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://507767968" -- R15 Fall
+        flyAnimation = humanoid:WaitForChild("Animator"):LoadAnimation(anim)
+        flyAnimation.Priority = Enum.AnimationPriority.Action
+        flyAnimation.Looped = true
+        flyAnimation:Play()
+    end)
+    
+    -- Disable physics animations
+    humanoid.PlatformStand = true
+    
+    -- Create BodyVelocity (Movement)
     bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(40000, 40000, 40000)
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = hrp
+    
+    -- Create BodyGyro (Orientation agar karakter menghadap arah terbang)
+    bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.D = 100
+    bodyGyro.P = 10000
+    bodyGyro.CFrame = hrp.CFrame
+    bodyGyro.Parent = hrp
     
     -- Setup movement loop
     Settings.connections.fly = Services.RunService.Heartbeat:Connect(function()
@@ -69,10 +95,17 @@ function FlyFeature.start()
         end
         
         bodyVelocity.Velocity = moveVector * get_fly_speed()
+        
+        -- Update Rotation (Karakter menghadap arah kamera agar lebih gaya)
+        if moveVector.Magnitude > 0 then
+            bodyGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + moveVector)
+        else
+            bodyGyro.CFrame = camera.CFrame
+        end
     end)
     
     table.insert(Settings.connections.all, Settings.connections.fly)
-    print("✅ Fly activated")
+    print("✅ Fly activated with animations")
 end
 
 -- ============================================
@@ -85,6 +118,17 @@ function FlyFeature.stop()
     flyActive = false
     Settings.features.flyEnabled = false
     
+    local humanoid = Services.get_humanoid()
+    if humanoid then
+        humanoid.PlatformStand = false
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+    
+    if flyAnimation then
+        flyAnimation:Stop()
+        flyAnimation = nil
+    end
+    
     if Settings.connections.fly then
         Settings.connections.fly:Disconnect()
         Settings.connections.fly = nil
@@ -93,6 +137,11 @@ function FlyFeature.stop()
     if bodyVelocity then
         bodyVelocity:Destroy()
         bodyVelocity = nil
+    end
+    
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
     end
     
     print("❌ Fly deactivated")
