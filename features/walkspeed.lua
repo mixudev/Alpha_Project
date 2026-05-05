@@ -20,17 +20,21 @@ local function detect_base_speed()
     if humanoid and not speedActive then
         local current = humanoid.WalkSpeed
         -- Jika speed sangat rendah atau 0 (misal sedang stun/cutscene), jangan anggap base speed permanen
-        if current > 1 then 
+        -- Dan jangan anggap speed yang sangat tinggi (di atas 50) sebagai base, 
+        -- karena mungkin itu hasil exploit lain atau power-up sementara.
+        if current > 1 and current < 50 then 
             baseSpeed = current
         end
     end
     return baseSpeed
 end
 
--- Initialize base speed
+-- Initialize base speed (aggressive detection at start)
 task.spawn(function()
-    task.wait(2) -- Wait for game to stabilize
-    detect_base_speed()
+    for i = 1, 10 do
+        detect_base_speed()
+        task.wait(0.5)
+    end
 end)
 
 function WalkSpeedFeature.apply()

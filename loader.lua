@@ -454,14 +454,15 @@ local function load_all()
         wsLayout.FillDirection = Enum.FillDirection.Horizontal
         wsLayout.Padding = UDim.new(0, 8)
         wsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-        local wsVals = { 32, 60, 100, 200 }
-        local wsLabels = { "Lari", "Flash", "Sonic", "Cheater" }
+        local wsVals = { "Default", 32, 60, 100, 200 }
+        local wsLabels = { "Default", "Lari", "Flash", "Sonic", "Cheater" }
         for i = 1, #wsVals do
+            local val = wsVals[i]
             local btn = Instance.new("TextButton")
             btn.Parent = wsRow
             btn.Size = UDim2.new(0, 0, 0, 28)
             btn.AutomaticSize = Enum.AutomaticSize.X
-            btn.BackgroundColor3 = (Config.features.walkSpeedValue == wsVals[i]) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
+            btn.BackgroundColor3 = (Config.features.walkSpeedValue == val) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)
             btn.BorderSizePixel = 0
             btn.Font = Enum.Font.Gotham
             btn.Text = "  " .. wsLabels[i] .. "  "
@@ -471,7 +472,11 @@ local function load_all()
             corner.CornerRadius = UDim.new(0, 4)
             corner.Parent = btn
             btn.MouseButton1Click:Connect(function()
-                pcall(function() WalkSpeedFeature.set_speed(wsVals[i]) end)
+                local targetSpeed = val
+                if val == "Default" then
+                    targetSpeed = WalkSpeedFeature.get_base_speed()
+                end
+                pcall(function() WalkSpeedFeature.set_speed(targetSpeed) end)
                 for _, c in ipairs(wsRow:GetChildren()) do
                     if c:IsA("TextButton") then
                         c.BackgroundColor3 = (c == btn) and Color3.fromRGB(0, 120, 100) or Color3.fromRGB(45, 50, 60)

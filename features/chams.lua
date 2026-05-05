@@ -27,16 +27,17 @@ local function add_highlight(player)
     if highlights[player] then return end
     local char = player.Character
     if not char then return end
-    local existing = char:FindFirstChild("AlphaChamsHighlight")
-    if existing then existing:Destroy() end
+    
     local hl = Instance.new("Highlight")
-    hl.Name = "AlphaChamsHighlight"
+    hl.Name = "AlphaChams_" .. player.Name
     hl.FillColor = FILL_COLOR
     hl.OutlineColor = OUTLINE_COLOR
     hl.FillTransparency = FILL_TRANSPARENCY
     hl.OutlineTransparency = OUTLINE_TRANSPARENCY
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.Parent = char
+    hl.Adornee = char
+    hl.Parent = Services.CoreGui
+    
     highlights[player] = hl
 end
 
